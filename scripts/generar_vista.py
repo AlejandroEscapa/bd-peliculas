@@ -362,6 +362,7 @@ def generar(db_path: Path) -> str:
     btn.className = 'more-btn';
     const info = document.createElement('div');
     info.className = 'count';
+    info.setAttribute("aria-live", "polite");
     const pintar = () => {
       rows.forEach((tr, i) => { tr.style.display = i < visibles ? '' : 'none'; });
       const restan = rows.length - visibles;
@@ -408,7 +409,14 @@ def generar(db_path: Path) -> str:
   const cerrarBtn = document.getElementById('ficha-cerrar');
   let sel = -1;
   let actual = [];
-  const cerrarFicha = () => { overlay.hidden = true; contenido.innerHTML = ''; };
+  let focoPrevio = null;
+  const cerrarFicha = () => {
+    if (overlay.hidden) return;
+    overlay.hidden = true;
+    contenido.innerHTML = '';
+    document.body.style.overflow = '';
+    if (focoPrevio && typeof focoPrevio.focus === 'function') focoPrevio.focus();
+  };
   const abrirFicha = (tt) => {
     const f = fichas[tt];
     if (!f) return;
@@ -466,7 +474,9 @@ def generar(db_path: Path) -> str:
     }
     grid.appendChild(lado);
     contenido.appendChild(grid);
+    focoPrevio = document.activeElement;
     overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
     cerrarBtn.focus();
   };
   window.abrirFicha = abrirFicha;
@@ -478,6 +488,21 @@ def generar(db_path: Path) -> str:
   });
   if (cerrarBtn) cerrarBtn.addEventListener('click', cerrarFicha);
   overlay.addEventListener('click', (ev) => { if (ev.target === overlay) cerrarFicha(); });
+  overlay.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Tab' || overlay.hidden) return;
+    const focusables = [...overlay.querySelectorAll(
+      'button, a[href], [tabindex]:not([tabindex="-1"])')];
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (ev.shiftKey && document.activeElement === first) {
+      ev.preventDefault();
+      last.focus();
+    } else if (!ev.shiftKey && document.activeElement === last) {
+      ev.preventDefault();
+      first.focus();
+    }
+  });
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { cerrarFicha(); if (rg) { rg.hidden = true; if (bg) bg.setAttribute('aria-expanded', 'false'); } } });
   const pintarGlobal = () => {
     rg.innerHTML = '';
@@ -543,7 +568,7 @@ def generar(db_path: Path) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mi catálogo — stats</title><style>{CSS}</style></head><body><div class="wrap">
 <header><div class="hdr"><div><h1>Mi catálogo</h1><p>{total} títulos de IMDb · {valoradas} valorados · {pendientes} en seguimiento</p></div>
-<div class="buscador-global"><input id="buscador-global" type="search" placeholder="Buscar título, director, actor…" aria-label="Buscador global" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="resultados-global">
+<div class="buscador-global"><input id="buscador-global" type="search" placeholder="Buscar título, director, actor…" aria-label="Buscador global" autocomplete="off" role="combobox" aria-haspopup="listbox" aria-autocomplete="list" aria-expanded="false" aria-controls="resultados-global">
 <div class="resultados-global" id="resultados-global" role="listbox" hidden></div></div></div></header>
 {kpis}
 {posters_html}

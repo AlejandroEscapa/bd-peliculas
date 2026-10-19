@@ -68,6 +68,13 @@ class TestVistaHtml(unittest.TestCase):
         self.assertNotIn("<script>alert(1)</script>", bloque)
         self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", bloque)
 
+    def test_marcadores_de_accesibilidad(self):
+        pagina = self._generar_con_fixture()
+        for marcador in ('info.setAttribute("aria-live", "polite")',
+                         'aria-haspopup="listbox"', 'aria-autocomplete="list"',
+                         'role="dialog"', 'aria-modal="true"'):
+            self.assertIn(marcador, pagina)
+
     def test_lista_completa_con_todos_los_titulos(self):
         tmp = tempfile.TemporaryDirectory()
         db_path = Path(tmp.name) / "test.db"
