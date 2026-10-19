@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import json
 import sqlite3
 import sys
 from pathlib import Path
@@ -65,6 +66,37 @@ font-size: 13px; cursor: pointer; transition: transform .15s ease, background .1
 .count { color: var(--sub); font-size: 12px; text-align: center; margin-top: 8px; }
 .search { width: 100%; padding: 10px 14px; border: 1px solid var(--line);
 border-radius: 999px; font-size: 14px; margin-bottom: 12px; background: #fff; color: var(--ink); }
+.hdr { display: flex; gap: 16px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
+.buscador-global { position: relative; min-width: 280px; flex: 0 1 340px; }
+.buscador-global input { width: 100%; padding: 10px 14px; border: 1px solid var(--line);
+border-radius: 999px; font-size: 14px; background: #fff; color: var(--ink); }
+.resultados-global { position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+box-shadow: 0 12px 32px rgba(0,0,0,.12); z-index: 30; }
+.resultados-global[hidden] { display: none; }
+.resultados-global button { display: flex; gap: 10px; align-items: center; width: 100%;
+border: none; background: #fff; padding: 8px 10px; cursor: pointer; text-align: left; font-size: 14px; }
+.resultados-global button[aria-selected="true"], .resultados-global button:hover { background: var(--bg); }
+.resultados-global img { width: 34px; height: 50px; object-fit: cover; border-radius: 6px; background: var(--line); }
+.resultados-global .rg-t { font-weight: 600; }
+.resultados-global .rg-s { color: var(--sub); font-size: 12px; }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex;
+align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+.overlay[hidden] { display: none; }
+.ficha { background: #fff; border-radius: 20px; max-width: 760px; width: 100%;
+max-height: 88vh; overflow: auto; padding: 22px; position: relative; }
+.ficha-cerrar { position: absolute; top: 12px; right: 12px; border: 1px solid var(--line);
+background: #fff; border-radius: 999px; width: 32px; height: 32px; cursor: pointer; font-size: 16px; }
+.ficha-grid { display: grid; grid-template-columns: 150px 1fr; gap: 18px; }
+@media (max-width: 600px) { .ficha-grid { grid-template-columns: 1fr; } }
+.ficha img.poster { width: 150px; border-radius: 12px; background: var(--line); }
+.ficha h3 { font-size: 24px; letter-spacing: -0.01em; }
+.ficha .meta { color: var(--sub); font-size: 13px; margin: 6px 0 12px; }
+.ficha .sinopsis { font-size: 14px; line-height: 1.55; margin: 10px 0; }
+.ficha .bloque { font-size: 13px; margin-top: 10px; }
+.ficha .bloque b { display: block; font-size: 12px; text-transform: uppercase;
+letter-spacing: 0.06em; color: var(--sub); margin-bottom: 4px; }
+tr[data-tt] { cursor: pointer; }
 footer { color: var(--sub); font-size: 12px; text-align: center; margin-top: 26px; }
 """
 
@@ -127,11 +159,29 @@ def generar(db_path: Path) -> str:
         "ORDER BY dif DESC LIMIT 30").fetchall()
     faltan = c.execute("SELECT COUNT(*) n FROM v_sin_enriquecer").fetchone()["n"]
     todas = c.execute(
-        """SELECT t.title_es, t.original_title, t.title_type, t.year,
+        """SELECT t.tt, t.title_es, t.original_title, t.title_type, t.year,
                   t.imdb_rating, u.my_rating,
                   (SELECT GROUP_CONCAT(genre, ', ') FROM title_genres g WHERE g.tt = t.tt) AS generos
            FROM titles t LEFT JOIN user_state u ON u.tt = t.tt
            ORDER BY t.title_es COLLATE NOCASE""").fetchall()
+    fichas = c.execute(
+        """SELECT t.tt, t.title_es, t.original_title, t.url, t.title_type, t.year,
+                  t.imdb_rating, u.my_rating, t.synopsis, t.poster_url
+           FROM titles t LEFT JOIN user_state u ON u.tt = t.tt""").fetchall()
+    cast_rows = c.execute(
+        """SELECT tc.tt, p.name, tc.character_name FROM title_cast tc
+           JOIN people p ON p.id = tc.person_id
+           ORDER BY tc.tt, tc.cast_order""").fetchall()
+    director_rows = c.execute(
+        """SELECT tc.tt, p.name FROM title_credits tc
+           JOIN people p ON p.id = tc.person_id
+           WHERE tc.role = 'director' ORDER BY tc.tt, p.name""").fetchall()
+    pais_rows = c.execute(
+        "SELECT tt, country_code FROM title_countries ORDER BY tt, country_code"
+    ).fetchall()
+    genero_rows = c.execute(
+        "SELECT tt, genre FROM title_genres ORDER BY tt, genre"
+    ).fetchall()
     c.close()
 
     e = html.escape
@@ -181,10 +231,59 @@ def generar(db_path: Path) -> str:
                   mostrar_generos(r["generos"]), str(r["imdb_rating"] or "-"),
                   (f'<span class="pill">{r["my_rating"]}</span>'
                    if r["my_rating"] is not None else '<span class="np" title="No puntuado">NP</span>')]
-        fila = fila_tabla(celdas, cls_first="t").replace("<tr>", f'<tr data-r="{clave}">', 1)
+        fila = fila_tabla(celdas, cls_first="t").replace(
+            "<tr>", f'<tr data-r="{clave}" data-tt="{e(r["tt"] if "tt" in r.keys() else "")}">', 1)
         todas_tr.append(fila)
     all_rows = "".join(todas_tr)
     ntotal = len(todas)
+    cast_por_tt: dict[str, list[dict]] = {}
+    for r in cast_rows:
+        cast_por_tt.setdefault(r["tt"], []).append(
+            {"name": r["name"], "character": r["character_name"] or ""})
+    dir_por_tt: dict[str, list[str]] = {}
+    for r in director_rows:
+        dir_por_tt.setdefault(r["tt"], []).append(r["name"])
+    pais_por_tt: dict[str, list[str]] = {}
+    for r in pais_rows:
+        pais_por_tt.setdefault(r["tt"], []).append(r["country_code"])
+    gen_por_tt: dict[str, list[str]] = {}
+    for r in genero_rows:
+        gen_por_tt.setdefault(r["tt"], []).append(r["genre"])
+    indice = []
+    fichas_map: dict[str, dict] = {}
+    for r in fichas:
+        tt = r["tt"]
+        titulo = r["title_es"] or r["original_title"] or tt
+        indice.append({
+            "tt": tt,
+            "t": titulo,
+            "o": r["original_title"] or "",
+            "y": r["year"],
+            "tipo": r["title_type"] or "",
+            "nota": r["my_rating"],
+            "imdb": r["imdb_rating"],
+            "poster": r["poster_url"] or "",
+            "d": ", ".join(dir_por_tt.get(tt, [])),
+            "a": ", ".join(x["name"] for x in cast_por_tt.get(tt, [])[:8]),
+            "g": ", ".join(gen_por_tt.get(tt, [])),
+        })
+        fichas_map[tt] = {
+            "titulo": titulo,
+            "original": r["original_title"] or "",
+            "url": r["url"] or "",
+            "tipo": r["title_type"] or "",
+            "year": r["year"],
+            "imdb": r["imdb_rating"],
+            "nota": r["my_rating"],
+            "sinopsis": r["synopsis"] or "",
+            "poster": r["poster_url"] or "",
+            "cast": cast_por_tt.get(tt, [])[:8],
+            "directores": dir_por_tt.get(tt, []),
+            "paises": pais_por_tt.get(tt, []),
+            "generos": gen_por_tt.get(tt, []),
+        }
+    indice_json = json.dumps(indice, ensure_ascii=False).replace("</", "<\\/")
+    fichas_json = json.dumps(fichas_map, ensure_ascii=False).replace("</", "<\\/")
     pend_rows = "".join(
         fila_tabla([f'<span class="nw">{e(r["title_es"] or r["original_title"] or "")}'
                     f' <span style="color:var(--sub)">({r["year"] or "?"})</span></span>',
@@ -242,13 +341,147 @@ def generar(db_path: Path) -> str:
     if (wrap) wrap.style.display = 'none';
     if (info) info.textContent = vistos + ' resultados para "' + q.value + '"';
   });
+  // Buscador global + ficha overlay.
+  const indice = JSON.parse(document.getElementById('indice-data').textContent || '[]');
+  const fichas = JSON.parse(document.getElementById('fichas-data').textContent || '{}');
+  const bg = document.getElementById('buscador-global');
+  const rg = document.getElementById('resultados-global');
+  const overlay = document.getElementById('overlay');
+  const contenido = document.getElementById('ficha-contenido');
+  const cerrarBtn = document.getElementById('ficha-cerrar');
+  let sel = -1;
+  let actual = [];
+  const cerrarFicha = () => { overlay.hidden = true; contenido.innerHTML = ''; };
+  const abrirFicha = (tt) => {
+    const f = fichas[tt];
+    if (!f) return;
+    contenido.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'ficha-grid';
+    if (f.poster) {
+      const img = document.createElement('img');
+      img.className = 'poster';
+      img.src = f.poster;
+      img.alt = 'Póster de ' + f.titulo;
+      img.loading = 'lazy';
+      grid.appendChild(img);
+    }
+    const lado = document.createElement('div');
+    const h = document.createElement('h3');
+    h.id = 'ficha-titulo';
+    h.textContent = f.titulo;
+    lado.appendChild(h);
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const partes = [f.year || '?', f.tipo || '',
+      (f.nota != null ? 'Tu nota: ' + f.nota : 'Sin valorar'),
+      (f.imdb != null ? 'IMDb: ' + f.imdb : '')].filter(Boolean);
+    meta.textContent = partes.join(' · ');
+    lado.appendChild(meta);
+    const pasa = (titulo, texto) => {
+      if (!texto) return;
+      const b = document.createElement('div');
+      b.className = 'bloque';
+      const tt2 = document.createElement('b');
+      tt2.textContent = titulo;
+      b.appendChild(tt2);
+      const p = document.createElement('div');
+      p.textContent = texto;
+      if (titulo === 'Sinopsis') p.className = 'sinopsis';
+      b.appendChild(p);
+      lado.appendChild(b);
+    };
+    pasa('Sinopsis', f.sinopsis || 'Sin sinopsis disponible todavía.');
+    pasa('Reparto', (f.cast || []).map((m) => m.character ? m.name + ' como ' + m.character : m.name).join(', '));
+    pasa('Dirección', (f.directores || []).join(', '));
+    pasa('Géneros', (f.generos || []).join(', '));
+    pasa('Países', (f.paises || []).join(', '));
+    if (f.url) {
+      const b = document.createElement('div');
+      b.className = 'bloque';
+      const a = document.createElement('a');
+      a.href = f.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = 'Ver en IMDb';
+      b.appendChild(a);
+      lado.appendChild(b);
+    }
+    grid.appendChild(lado);
+    contenido.appendChild(grid);
+    overlay.hidden = false;
+    cerrarBtn.focus();
+  };
+  window.abrirFicha = abrirFicha;
+  if (cerrarBtn) cerrarBtn.addEventListener('click', cerrarFicha);
+  overlay.addEventListener('click', (ev) => { if (ev.target === overlay) cerrarFicha(); });
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { cerrarFicha(); if (rg) { rg.hidden = true; if (bg) bg.setAttribute('aria-expanded', 'false'); } } });
+  const pintarGlobal = () => {
+    rg.innerHTML = '';
+    sel = -1;
+    if (!bg.value.trim()) { rg.hidden = true; bg.setAttribute('aria-expanded', 'false'); return; }
+    const t = bg.value.toLowerCase().trim();
+    actual = indice.filter((x) => ((x.t || '') + ' ' + (x.o || '') + ' ' + (x.d || '') + ' ' + (x.a || '') + ' ' + (x.g || '')).toLowerCase().includes(t)).slice(0, 8);
+    if (!actual.length) { rg.hidden = true; bg.setAttribute('aria-expanded', 'false'); return; }
+    actual.forEach((x, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('role', 'option');
+      b.dataset.tt = x.tt;
+      if (x.poster) {
+        const img = document.createElement('img');
+        img.src = x.poster;
+        img.alt = '';
+        img.loading = 'lazy';
+        b.appendChild(img);
+      }
+      const tx = document.createElement('span');
+      const t1 = document.createElement('div');
+      t1.className = 'rg-t';
+      t1.textContent = x.t;
+      tx.appendChild(t1);
+      const t2 = document.createElement('div');
+      t2.className = 'rg-s';
+      t2.textContent = [x.y || '?', x.tipo || '', (x.nota != null ? 'Tu nota ' + x.nota : '')].filter(Boolean).join(' · ');
+      tx.appendChild(t2);
+      b.appendChild(tx);
+      b.addEventListener('click', () => { rg.hidden = true; bg.setAttribute('aria-expanded', 'false'); abrirFicha(x.tt); });
+      rg.appendChild(b);
+    });
+    rg.hidden = false;
+    bg.setAttribute('aria-expanded', 'true');
+  };
+  if (bg && rg) {
+    bg.addEventListener('input', pintarGlobal);
+    bg.addEventListener('keydown', (ev) => {
+      const btns = Array.from(rg.querySelectorAll('button'));
+      if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+        ev.preventDefault();
+        sel = ev.key === 'ArrowDown' ? Math.min(sel + 1, btns.length - 1) : Math.max(sel - 1, 0);
+        btns.forEach((b, i) => b.setAttribute('aria-selected', i === sel ? 'true' : 'false'));
+        if (btns[sel]) btns[sel].scrollIntoView({ block: 'nearest' });
+      } else if (ev.key === 'Enter' && sel >= 0 && btns[sel]) {
+        ev.preventDefault();
+        const tt = btns[sel].dataset.tt;
+        rg.hidden = true;
+        abrirFicha(tt);
+      }
+    });
+    document.addEventListener('click', (ev) => { if (!rg.hidden && !ev.target.closest('.buscador-global')) { rg.hidden = true; bg.setAttribute('aria-expanded', 'false'); } });
+  }
+  if (tblTodas) tblTodas.addEventListener('click', (ev) => {
+    const tr = ev.target.closest('tr[data-tt]');
+    if (tr && tr.dataset.tt) abrirFicha(tr.dataset.tt);
+  });
 })();
 </script>"""
 
     return f"""<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mi catálogo — stats</title><style>{CSS}</style></head><body><div class="wrap">
-<header><h1>Mi catálogo</h1><p>{total} títulos de IMDb · {valoradas} valorados · {pendientes} en seguimiento</p></header>
+<header><div class="hdr"><div><h1>Mi catálogo</h1><p>{total} títulos de IMDb · {valoradas} valorados · {pendientes} en seguimiento</p></div>
+<div class="buscador-global"><input id="buscador-global" type="search" placeholder="Buscar título, director, actor…" aria-label="Buscador global" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="resultados-global">
+<div class="resultados-global" id="resultados-global" role="listbox" hidden></div></div></div></header>
 {kpis}
 <section><h2>Tus favoritas</h2><div class="hint">Ordenadas por tu nota. 15 visibles, carga 15 más.</div>
 <table class="paginada"><thead><tr><th>Tu nota</th><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
@@ -271,7 +504,12 @@ def generar(db_path: Path) -> str:
 <table class="paginada" id="tabla-todas"><thead><tr><th>Título</th><th>Tipo</th><th>Año</th><th>Géneros</th><th>IMDb</th><th>Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
 <section><h2>En seguimiento</h2><div class="hint">Sin tu nota todavía. 15 visibles, carga 15 más.</div>
 <table class="paginada"><thead><tr><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{pend_rows}</tbody></table></section>
+<div class="overlay" id="overlay" hidden><div class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
+<button class="ficha-cerrar" id="ficha-cerrar" aria-label="Cerrar ficha">×</button>
+<div id="ficha-contenido"></div></div></div>
 <footer>Generado desde tu base local · auto-regenerable con scripts/auto_vista.py</footer>
+<script type="application/json" id="indice-data">{indice_json}</script>
+<script type="application/json" id="fichas-data">{fichas_json}</script>
 </div>{js}</body></html>"""
 
 

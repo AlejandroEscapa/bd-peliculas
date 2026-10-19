@@ -30,6 +30,11 @@ class TestVistaHtml(unittest.TestCase):
         # Secciones KPI presentes.
         for seccion in ("Tus favoritas", "En seguimiento", "Lista completa"):
             self.assertIn(seccion, pagina)
+        # Buscador global + ficha overlay.
+        for marcador in ('id="buscador-global"', 'id="resultados-global"',
+                          'id="overlay"', 'id="indice-data"',
+                          'id="fichas-data"', 'abrirFicha'):
+            self.assertIn(marcador, pagina)
         tmp.cleanup()
 
 
