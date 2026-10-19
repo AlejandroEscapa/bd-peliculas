@@ -98,6 +98,27 @@ background: #fff; border-radius: 999px; width: 32px; height: 32px; cursor: point
 letter-spacing: 0.06em; color: var(--sub); margin-bottom: 4px; }
 tr[data-tt] { cursor: pointer; }
 footer { color: var(--sub); font-size: 12px; text-align: center; margin-top: 26px; }
+.poster-section { padding: 22px; }
+.section-head { display: flex; align-items: baseline; justify-content: space-between;
+gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.poster-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.poster-card { position: relative; border: none; background: none; padding: 0;
+text-align: left; cursor: pointer; border-radius: 12px; }
+.poster-card img, .poster-fallback { width: 100%; aspect-ratio: 2 / 3; object-fit: cover;
+border-radius: 12px; background: var(--line); display: flex; align-items: center;
+justify-content: center; }
+.poster-fallback { font-size: 30px; font-weight: 700; color: var(--sub);
+background: linear-gradient(135deg, #e8e8ed, #d9d9e0); }
+.poster-card img { display: block; transition: transform .18s ease; }
+.poster-card:hover img { transform: scale(1.02); }
+.poster-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.poster-rating { position: absolute; top: 8px; left: 8px; background: var(--accent);
+color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 700; }
+.poster-title { display: block; margin-top: 8px; font-size: 13px; font-weight: 600;
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.poster-year { display: block; color: var(--sub); font-size: 12px; }
+.empty { color: var(--sub); font-size: 14px; }
+@media (max-width: 760px) { .poster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 """
 
 
@@ -123,6 +144,27 @@ def fila_tabla(celdas: list[str], cls_first: str | None = None) -> str:
     return "<tr>" + "".join(f"<td>{c}</td>" for c in celdas) + "</tr>"
 
 
+def _iniciales(titulo: str) -> str:
+    partes = [p for p in titulo.split() if p]
+    return "".join(p[0] for p in partes[:2]).upper() or "?"
+
+
+def _tarjeta_poster(r: sqlite3.Row, e=html.escape) -> str:
+    titulo = r["title_es"] or r["original_title"] or ""
+    if r["poster_url"]:
+        media = (f'<img src="{e(r["poster_url"])}" '
+                 f'alt="Póster de {e(titulo)}" loading="lazy">')
+        clase = "poster-card"
+    else:
+        media = f'<span class="poster-fallback" aria-hidden="true">{e(_iniciales(titulo))}</span>'
+        clase = "poster-card no-poster"
+    return (f'<button type="button" class="{clase}" data-tt="{e(r["tt"])}" '
+            f'aria-label="Abrir ficha de {e(titulo)}">'
+            f'{media}<span class="poster-rating">{r["my_rating"]}</span>'
+            f'<span class="poster-title">{e(titulo)}</span>'
+            f'<span class="poster-year">{r["year"] or "?"}</span></button>')
+
+
 def generar(db_path: Path) -> str:
     c = sqlite3.connect(str(db_path))
     c.row_factory = sqlite3.Row
@@ -134,6 +176,13 @@ def generar(db_path: Path) -> str:
         "SELECT ROUND(AVG(my_rating), 2) m FROM user_state WHERE my_rating IS NOT NULL"
     ).fetchone()["m"]
     top = c.execute("SELECT * FROM v_top_rated LIMIT 60").fetchall()
+    top_posters = c.execute(
+        """SELECT t.tt, t.title_es, t.original_title, t.year, u.my_rating, t.poster_url
+           FROM titles t JOIN user_state u ON u.tt = t.tt
+           WHERE u.my_rating IS NOT NULL
+           ORDER BY u.my_rating DESC, u.date_rated DESC
+           LIMIT 10"""
+    ).fetchall()
     generos = c.execute("SELECT * FROM v_generos_fav").fetchall()
     directores = c.execute("SELECT * FROM v_directores_fav LIMIT 30").fetchall()
     pend = c.execute("SELECT * FROM v_pendientes LIMIT 60").fetchall()
@@ -192,6 +241,14 @@ def generar(db_path: Path) -> str:
             f'<div class="kpi"><div class="n">{media or "-"}</div><div class="l">Tu nota media</div></div>'
             f'<div class="kpi"><div class="n">{faltan}</div><div class="l">Sin enriquecer</div></div>'
             f'</div>')
+
+    posters = "".join(_tarjeta_poster(r) for r in top_posters) or (
+        '<p class="empty">Aún no has valorado nada.</p>')
+    posters_html = (
+        '<section class="poster-section" aria-labelledby="posters-title">'
+        '<div class="section-head"><h2 id="posters-title">Tus favoritas, en cartel</h2>'
+        '<span class="hint">Top 10 por tu nota. Pulsa una para abrir la ficha.</span></div>'
+        f'<div class="poster-grid">{posters}</div></section>')
 
     top_rows = "".join(
         fila_tabla([f'<span class="pill">{r["my_rating"]}</span>',
@@ -413,6 +470,12 @@ def generar(db_path: Path) -> str:
     cerrarBtn.focus();
   };
   window.abrirFicha = abrirFicha;
+  document.querySelectorAll('.poster-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const tt = card.dataset.tt;
+      if (tt) abrirFicha(tt);
+    });
+  });
   if (cerrarBtn) cerrarBtn.addEventListener('click', cerrarFicha);
   overlay.addEventListener('click', (ev) => { if (ev.target === overlay) cerrarFicha(); });
   document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { cerrarFicha(); if (rg) { rg.hidden = true; if (bg) bg.setAttribute('aria-expanded', 'false'); } } });
@@ -483,6 +546,7 @@ def generar(db_path: Path) -> str:
 <div class="buscador-global"><input id="buscador-global" type="search" placeholder="Buscar título, director, actor…" aria-label="Buscador global" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="resultados-global">
 <div class="resultados-global" id="resultados-global" role="listbox" hidden></div></div></div></header>
 {kpis}
+{posters_html}
 <section><h2>Tus favoritas</h2><div class="hint">Ordenadas por tu nota. 15 visibles, carga 15 más.</div>
 <table class="paginada"><thead><tr><th>Tu nota</th><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
 <div class="grid2">

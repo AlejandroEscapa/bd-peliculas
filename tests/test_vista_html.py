@@ -1,4 +1,5 @@
 """Panel HTML: contiene la lista completa y las secciones KPI."""
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -14,6 +15,59 @@ FIXTURE = ROOT / "tests" / "fixtures" / "mini.csv"
 
 
 class TestVistaHtml(unittest.TestCase):
+    def _generar_con_fixture(self, *, poster=None, sin_notas=False):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        db_path = Path(tmp.name) / "test.db"
+        import_csv(FIXTURE, db_path)
+        conn = sqlite3.connect(db_path)
+        if poster:
+            conn.execute("UPDATE titles SET poster_url = ? WHERE tt = 'tt0068646'", (poster,))
+        if sin_notas:
+            conn.execute("UPDATE user_state SET my_rating = NULL")
+        conn.commit()
+        conn.close()
+        return generar(db_path)
+
+    def _bloque_posters(self, pagina):
+        inicio = pagina.index('class="poster-grid"')
+        return pagina[inicio:pagina.index("</section>", inicio)]
+
+    def test_poster_strip_solo_valoradas(self):
+        bloque = self._bloque_posters(self._generar_con_fixture())
+        self.assertEqual(bloque.count('class="poster-card'), 2)
+        self.assertIn('data-tt="tt0068646"', bloque)
+        self.assertIn('data-tt="tt2098220"', bloque)
+
+    def test_poster_sin_url_usa_iniciales(self):
+        bloque = self._bloque_posters(self._generar_con_fixture())
+        self.assertIn("poster-fallback", bloque)
+        self.assertIn(">EP<", bloque)
+
+    def test_poster_usa_url(self):
+        bloque = self._bloque_posters(
+            self._generar_con_fixture(poster="https://example.com/padrino.jpg"))
+        self.assertIn('src="https://example.com/padrino.jpg"', bloque)
+        self.assertIn('alt="Póster de El padrino"', bloque)
+
+    def test_sin_valoradas_muestra_estado_vacio(self):
+        bloque = self._bloque_posters(self._generar_con_fixture(sin_notas=True))
+        self.assertIn("Aún no has valorado nada.", bloque)
+        self.assertEqual(bloque.count('class="poster-card'), 0)
+
+    def test_poster_escapa_html(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        db_path = Path(tmp.name) / "test.db"
+        import_csv(FIXTURE, db_path)
+        conn = sqlite3.connect(db_path)
+        conn.execute("UPDATE titles SET title_es = '<script>alert(1)</script>' WHERE tt = 'tt0068646'")
+        conn.commit()
+        conn.close()
+        bloque = self._bloque_posters(generar(db_path))
+        self.assertNotIn("<script>alert(1)</script>", bloque)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", bloque)
+
     def test_lista_completa_con_todos_los_titulos(self):
         tmp = tempfile.TemporaryDirectory()
         db_path = Path(tmp.name) / "test.db"
