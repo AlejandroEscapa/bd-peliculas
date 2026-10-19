@@ -121,7 +121,7 @@ Para reproducir el panel con tus datos, importa tu propio export. El repo no inc
 
 ## Roadmap
 
-- [ ] Vista de pósters en el panel, manteniendo la paginación 15 + 15.
+- [x] Vista de pósters en el panel, manteniendo la paginación 15 + 15.
 - [ ] Fase 2 de TMDB: estreno en España, presupuesto/taquilla y detalle de series.
 - [ ] CI en GitHub Actions con matriz de Python.
 - [ ] Demo reproducible con datos sintéticos.
