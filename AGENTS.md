@@ -20,4 +20,4 @@ python -m unittest discover -s tests
 - Migraciones forward-only en `db/migrations/`; no editar las aplicadas. Vistas solo-lectura en `db/views.sql`.
 - Secretos solo por entorno (`TMDB_BEARER`, `OMDB_API_KEY`). Nunca en código, `.env` ni Git. No reproducir valores en chat/logs.
 - Panel: HTML estático sin dependencias, en español, paginación 15+15 (`table.paginada` + `.more-btn`), consultas parametrizadas, `html.escape` en todo texto de BD.
-- Tests stdlib (`python -m unittest discover -s tests`, 35 tests). Toda idea visual se propone de una en una y solo se implementa la aceptada.
+- Tests stdlib (`python -m unittest discover -s tests`, 41 tests). Toda idea visual se propone de una en una y solo se implementa la aceptada.
