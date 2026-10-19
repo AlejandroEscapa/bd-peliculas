@@ -1,4 +1,5 @@
 """Panel HTML: contiene la lista completa y las secciones KPI."""
+import re
 import sqlite3
 import sys
 import tempfile
@@ -67,6 +68,39 @@ class TestVistaHtml(unittest.TestCase):
         bloque = self._bloque_posters(generar(db_path))
         self.assertNotIn("<script>alert(1)</script>", bloque)
         self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", bloque)
+
+    def test_catalogo_con_campos_de_filtro(self):
+        pagina = self._generar_con_fixture()
+        self.assertIn('id="catalogo-data"', pagina)
+        for campo in ('"titulo"', '"tipo"', '"year"', '"nota"', '"imdb"',
+                      '"fecha"', '"estado"', '"duracion"', '"sinopsis"',
+                      '"poster"', '"sin_sinopsis"', '"sin_reparto"',
+                      '"diferencia"', '"reparto"', '"directores"',
+                      '"paises"', '"generos"'):
+            self.assertIn(campo, pagina)
+
+    def test_tablas_llevan_data_label(self):
+        pagina = self._generar_con_fixture()
+        inicio = pagina.index('id="tabla-top"')
+        bloque = pagina[inicio:pagina.index("</table>", inicio)]
+        celdas = re.findall(r"<td[^>]*>", bloque)
+        self.assertTrue(celdas)
+        self.assertTrue(all("data-label=" in celda for celda in celdas))
+
+    def test_catalogo_escapa_cierre_de_script(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        db_path = Path(tmp.name) / "test.db"
+        import_csv(FIXTURE, db_path)
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            "UPDATE titles SET synopsis = '</script><script>alert(1)</script>' "
+            "WHERE tt = 'tt0068646'")
+        conn.commit()
+        conn.close()
+        pagina = generar(db_path)
+        self.assertNotIn("</script><script>alert(1)", pagina)
+        self.assertIn("<\\/script>", pagina)
 
     def test_marcadores_de_accesibilidad(self):
         pagina = self._generar_con_fixture()

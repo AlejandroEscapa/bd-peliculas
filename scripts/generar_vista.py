@@ -135,13 +135,31 @@ def mostrar_generos(valor: str | None, limite: int = 3) -> str:
     return html.escape(texto)
 
 
-def fila_tabla(celdas: list[str], cls_first: str | None = None) -> str:
-    celdas = list(celdas)
-    if cls_first and celdas:
-        celdas[0] = f'<td class="{cls_first}">{celdas[0]}</td>'
-        resto = "".join(f"<td>{c}</td>" for c in celdas[1:])
-        return f"<tr>{celdas[0]}{resto}</tr>"
-    return "<tr>" + "".join(f"<td>{c}</td>" for c in celdas) + "</tr>"
+ETIQUETAS_TABLA = {
+    "top": ["Tu nota", "Título", "Tipo", "IMDb"],
+    "joyas": ["Tú", "Título", "IMDb", "Diferencia"],
+    "decepciones": ["Tú", "Título", "IMDb", "Diferencia"],
+    "generos": ["Género", "Títulos", "Distribución", "Media"],
+    "directores": ["Director", "Títulos", "Media"],
+    "actores": ["Actor", "Títulos", "Media"],
+    "lista": ["Título", "Tipo", "Año", "Géneros", "IMDb", "Tu nota"],
+    "seguimiento": ["Título", "Tipo", "IMDb"],
+}
+
+
+def fila_tabla(celdas: list[str], cls_first: str | None = None,
+              etiquetas: list[str] | None = None) -> str:
+    """Fila con etiquetas por celda para el modo tarjeta en móvil."""
+    partes = []
+    for i, celda in enumerate(celdas):
+        attrs = []
+        if i == 0 and cls_first:
+            attrs.append(f'class="{cls_first}"')
+        if etiquetas and i < len(etiquetas):
+            attrs.append(f'data-label="{html.escape(etiquetas[i], quote=True)}"')
+        sufijo = (" " + " ".join(attrs)) if attrs else ""
+        partes.append(f"<td{sufijo}>{celda}</td>")
+    return "<tr>" + "".join(partes) + "</tr>"
 
 
 def _iniciales(titulo: str) -> str:
@@ -215,7 +233,9 @@ def generar(db_path: Path) -> str:
            ORDER BY t.title_es COLLATE NOCASE""").fetchall()
     fichas = c.execute(
         """SELECT t.tt, t.title_es, t.original_title, t.url, t.title_type, t.year,
-                  t.imdb_rating, u.my_rating, t.synopsis, t.poster_url
+                  t.imdb_rating, u.my_rating, t.synopsis, t.poster_url,
+                  t.runtime_min_csv, t.runtime_min_exact, u.date_rated,
+                  u.watch_status
            FROM titles t LEFT JOIN user_state u ON u.tt = t.tt""").fetchall()
     cast_rows = c.execute(
         """SELECT tc.tt, p.name, tc.character_name FROM title_cast tc
@@ -235,11 +255,11 @@ def generar(db_path: Path) -> str:
 
     e = html.escape
     kpis = (f'<div class="kpis">'
-            f'<div class="kpi"><div class="n">{total}</div><div class="l">Títulos</div></div>'
-            f'<div class="kpi"><div class="n">{valoradas}</div><div class="l">Valoradas por ti</div></div>'
-            f'<div class="kpi"><div class="n">{pendientes}</div><div class="l">En seguimiento</div></div>'
-            f'<div class="kpi"><div class="n">{media or "-"}</div><div class="l">Tu nota media</div></div>'
-            f'<div class="kpi"><div class="n">{faltan}</div><div class="l">Sin enriquecer</div></div>'
+            f'<div class="kpi" data-kpi="total"><div class="n">{total}</div><div class="l">Títulos</div></div>'
+            f'<div class="kpi" data-kpi="valoradas"><div class="n">{valoradas}</div><div class="l">Valoradas por ti</div></div>'
+            f'<div class="kpi" data-kpi="pendientes"><div class="n">{pendientes}</div><div class="l">En seguimiento</div></div>'
+            f'<div class="kpi" data-kpi="media"><div class="n">{media or "-"}</div><div class="l">Tu nota media</div></div>'
+            f'<div class="kpi" data-kpi="faltan"><div class="n">{faltan}</div><div class="l">Sin enriquecer</div></div>'
             f'</div>')
 
     posters = "".join(_tarjeta_poster(r) for r in top_posters) or (
@@ -254,32 +274,45 @@ def generar(db_path: Path) -> str:
         fila_tabla([f'<span class="pill">{r["my_rating"]}</span>',
                     f'<span class="nw">{e(r["title_es"] or r["original_title"] or "")}'
                     f' <span style="color:var(--sub)">({r["year"] or "?"})</span></span>',
-                    e(r["title_type"] or ""), str(r["imdb_rating"] or "-")])
+                    e(r["title_type"] or ""), str(r["imdb_rating"] or "-")],
+                   etiquetas=ETIQUETAS_TABLA["top"])
         for r in top)
     max_g = max([r["titulos"] for r in generos] or [1])
     gen_rows = "".join(
         fila_tabla([e(r["genero"]), str(r["titulos"]),
                     f'<div class="bar"><i style="width:{100 * r["titulos"] // max_g}%"></i></div>',
-                    str(r["nota_media"])])
+                    str(r["nota_media"])],
+                   etiquetas=ETIQUETAS_TABLA["generos"])
         for r in generos)
     dir_rows = "".join(
-        fila_tabla([e(r["director"]), str(r["titulos"]), str(r["nota_media"])])
-        for r in directores) or fila_tabla(["Sin datos aún", "", ""])
+        fila_tabla([e(r["director"]), str(r["titulos"]), str(r["nota_media"])],
+                   etiquetas=ETIQUETAS_TABLA["directores"])
+        for r in directores) or fila_tabla(
+            ["Sin datos aún", "", ""], etiquetas=ETIQUETAS_TABLA["directores"])
     actor_rows = "".join(
-        fila_tabla([e(r["actor"]), str(r["titulos"]), str(r["media"])])
-        for r in actores) or fila_tabla(["Sin reparto suficiente aún", "", ""])
+        fila_tabla([e(r["actor"]), str(r["titulos"]), str(r["media"])],
+                   etiquetas=ETIQUETAS_TABLA["actores"])
+        for r in actores) or fila_tabla(
+            ["Sin reparto suficiente aún", "", ""],
+            etiquetas=ETIQUETAS_TABLA["actores"])
     joya_rows = "".join(
         fila_tabla([f'<span class="pill">{r["my_rating"]}</span>',
                     f'<span class="nw">{e(r["title_es"] or r["original_title"] or "")}'
                     f' <span style="color:var(--sub)">({r["year"] or "?"})</span></span>',
-                    str(r["imdb_rating"]), f'+{round(r["dif"], 1)}'])
-        for r in joyas) or fila_tabla(["Sin joyas con +1.5 sobre IMDb", "", "", ""])
+                    str(r["imdb_rating"]), f'+{round(r["dif"], 1)}'],
+                   etiquetas=ETIQUETAS_TABLA["joyas"])
+        for r in joyas) or fila_tabla(
+            ["Sin joyas con +1.5 sobre IMDb", "", "", ""],
+            etiquetas=ETIQUETAS_TABLA["joyas"])
     decep_rows = "".join(
         fila_tabla([f'<span class="pill">{r["my_rating"]}</span>',
                     f'<span class="nw">{e(r["title_es"] or r["original_title"] or "")}'
                     f' <span style="color:var(--sub)">({r["year"] or "?"})</span></span>',
-                    str(r["imdb_rating"]), f'-{round(r["dif"], 1)}'])
-        for r in decepciones) or fila_tabla(["Sin decepciones de -1.5 bajo IMDb", "", "", ""])
+                    str(r["imdb_rating"]), f'-{round(r["dif"], 1)}'],
+                   etiquetas=ETIQUETAS_TABLA["decepciones"])
+        for r in decepciones) or fila_tabla(
+            ["Sin decepciones de -1.5 bajo IMDb", "", "", ""],
+            etiquetas=ETIQUETAS_TABLA["decepciones"])
     todas_tr = []
     for r in todas:
         tit = e(r["title_es"] or r["original_title"] or "")
@@ -288,7 +321,8 @@ def generar(db_path: Path) -> str:
                   mostrar_generos(r["generos"]), str(r["imdb_rating"] or "-"),
                   (f'<span class="pill">{r["my_rating"]}</span>'
                    if r["my_rating"] is not None else '<span class="np" title="No puntuado">NP</span>')]
-        fila = fila_tabla(celdas, cls_first="t").replace(
+        fila = fila_tabla(
+            celdas, cls_first="t", etiquetas=ETIQUETAS_TABLA["lista"]).replace(
             "<tr>", f'<tr data-r="{clave}" data-tt="{e(r["tt"] if "tt" in r.keys() else "")}">', 1)
         todas_tr.append(fila)
     all_rows = "".join(todas_tr)
@@ -308,6 +342,7 @@ def generar(db_path: Path) -> str:
         gen_por_tt.setdefault(r["tt"], []).append(r["genre"])
     indice = []
     fichas_map: dict[str, dict] = {}
+    catalogo_map: dict[str, dict] = {}
     for r in fichas:
         tt = r["tt"]
         titulo = r["title_es"] or r["original_title"] or tt
@@ -339,13 +374,40 @@ def generar(db_path: Path) -> str:
             "paises": pais_por_tt.get(tt, []),
             "generos": gen_por_tt.get(tt, []),
         }
+        catalogo_map[tt] = {
+            "titulo": titulo,
+            "original": r["original_title"] or "",
+            "url": r["url"] or "",
+            "tipo": r["title_type"] or "",
+            "year": r["year"],
+            "imdb": r["imdb_rating"],
+            "nota": r["my_rating"],
+            "fecha": r["date_rated"] or "",
+            "estado": "rated" if r["my_rating"] is not None else "watchlist",
+            "duracion": r["runtime_min_exact"] or r["runtime_min_csv"],
+            "sinopsis": r["synopsis"] or "",
+            "poster": r["poster_url"] or "",
+            "sin_sinopsis": not bool(r["synopsis"]),
+            "sin_reparto": not bool(cast_por_tt.get(tt)),
+            "diferencia": (
+                round(r["my_rating"] - r["imdb_rating"], 1)
+                if r["my_rating"] is not None and r["imdb_rating"] is not None
+                else None),
+            "reparto": [
+                {"nombre": c["name"], "personaje": c["character"]}
+                for c in cast_por_tt.get(tt, [])[:8]],
+            "directores": dir_por_tt.get(tt, []),
+            "paises": pais_por_tt.get(tt, []),
+            "generos": gen_por_tt.get(tt, []),
+        }
     indice_json = json.dumps(indice, ensure_ascii=False).replace("</", "<\\/")
     fichas_json = json.dumps(fichas_map, ensure_ascii=False).replace("</", "<\\/")
+    catalogo_json = json.dumps(catalogo_map, ensure_ascii=False).replace("</", "<\\/")
     pend_rows = "".join(
         fila_tabla([f'<span class="nw">{e(r["title_es"] or r["original_title"] or "")}'
                     f' <span style="color:var(--sub)">({r["year"] or "?"})</span></span>',
                     e(r["title_type"] or ""), str(r["imdb_rating"] or "-")],
-                   cls_first="t")
+                   cls_first="t", etiquetas=ETIQUETAS_TABLA["seguimiento"])
         for r in pend)
 
     js = """<script>
@@ -573,30 +635,31 @@ def generar(db_path: Path) -> str:
 {kpis}
 {posters_html}
 <section><h2>Tus favoritas</h2><div class="hint">Ordenadas por tu nota. 15 visibles, carga 15 más.</div>
-<table class="paginada"><thead><tr><th>Tu nota</th><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
+<table class="paginada" id="tabla-top" data-seccion="top"><thead><tr><th>Tu nota</th><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
 <div class="grid2">
 <section><h2>Joyas que tú amas</h2><div class="hint">Tu nota supera a IMDb en 1.5+. 15 visibles, carga 15 más.</div>
-<table class="paginada"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{joya_rows}</tbody></table></section>
+<table class="paginada" id="tabla-joyas" data-seccion="joyas"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{joya_rows}</tbody></table></section>
 <section><h2>Decepciones</h2><div class="hint">IMDb te supera en 1.5+. 15 visibles, carga 15 más.</div>
-<table class="paginada"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{decep_rows}</tbody></table></section>
+<table class="paginada" id="tabla-decepciones" data-seccion="decepciones"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{decep_rows}</tbody></table></section>
 </div>
 <div class="grid2">
 <section><h2>Géneros que más te gustan</h2><div class="hint">Nota media de tus valoradas. 15 visibles, carga 15 más.</div>
-<table class="paginada"><thead><tr><th>Género</th><th>Títulos</th><th></th><th>Media</th></tr></thead><tbody>{gen_rows}</tbody></table></section>
+<table class="paginada" id="tabla-generos" data-seccion="generos"><thead><tr><th>Género</th><th>Títulos</th><th></th><th>Media</th></tr></thead><tbody>{gen_rows}</tbody></table></section>
 <section><h2>Directores frecuentes</h2><div class="hint">En tus títulos valorados. 15 visibles, carga 15 más.</div>
-<table class="paginada"><thead><tr><th>Director</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{dir_rows}</tbody></table></section>
+<table class="paginada" id="tabla-directores" data-seccion="directores"><thead><tr><th>Director</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{dir_rows}</tbody></table></section>
 </div>
 <section><h2>Actores de confianza</h2><div class="hint">Tu nota media por actor (mínimo 2 títulos). 15 visibles, carga 15 más.</div>
-<table class="paginada"><thead><tr><th>Actor</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{actor_rows}</tbody></table></section>
+<table class="paginada" id="tabla-actores" data-seccion="actores"><thead><tr><th>Actor</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{actor_rows}</tbody></table></section>
 <section id="lista"><h2>Lista completa</h2><div class="hint">Los {ntotal} títulos. Filtra sin recargar. 15 visibles, carga 15 más.</div>
 <input class="search" id="q" type="search" placeholder="Filtra por título o género…" aria-label="Filtrar lista completa">
-<table class="paginada" id="tabla-todas"><thead><tr><th>Título</th><th>Tipo</th><th>Año</th><th>Géneros</th><th>IMDb</th><th>Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
+<table class="paginada" id="tabla-todas" data-seccion="lista"><thead><tr><th>Título</th><th>Tipo</th><th>Año</th><th>Géneros</th><th>IMDb</th><th>Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
 <section><h2>En seguimiento</h2><div class="hint">Sin tu nota todavía. 15 visibles, carga 15 más.</div>
-<table class="paginada"><thead><tr><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{pend_rows}</tbody></table></section>
+<table class="paginada" id="tabla-seguimiento" data-seccion="seguimiento"><thead><tr><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{pend_rows}</tbody></table></section>
 <div class="overlay" id="overlay" hidden><div class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
 <button class="ficha-cerrar" id="ficha-cerrar" aria-label="Cerrar ficha">×</button>
 <div id="ficha-contenido"></div></div></div>
 <footer>Generado desde tu base local · auto-regenerable con scripts/auto_vista.py</footer>
+<script type="application/json" id="catalogo-data">{catalogo_json}</script>
 <script type="application/json" id="indice-data">{indice_json}</script>
 <script type="application/json" id="fichas-data">{fichas_json}</script>
 </div>{js}</body></html>"""
