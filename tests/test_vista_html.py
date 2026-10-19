@@ -87,6 +87,16 @@ class TestVistaHtml(unittest.TestCase):
         self.assertTrue(celdas)
         self.assertTrue(all("data-label=" in celda for celda in celdas))
 
+    def test_css_responsive_y_controles_de_filtro(self):
+        pagina = self._generar_con_fixture()
+        for marcador in ("@container", "clamp(", "100dvh",
+                         "prefers-reduced-motion", "env(safe-area-inset-bottom)"):
+            self.assertIn(marcador, pagina)
+        self.assertGreaterEqual(pagina.count('class="filtro-btn"'), 10)
+        for marcador in ('data-kpi="media"', 'data-seccion="top"',
+                         'aria-haspopup="dialog"', 'class="filtro-panel"'):
+            self.assertIn(marcador, pagina)
+
     def test_catalogo_escapa_cierre_de_script(self):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)

@@ -23,22 +23,47 @@ from src.db import DEFAULT_DB_PATH
 
 CSS = """
 :root { --bg: #f5f5f7; --card: #ffffff; --ink: #1d1d1f; --sub: #6e6e73;
---accent: #0071e3; --line: #e8e8ed; --radius: 18px; }
+--accent: #0071e3; --line: #e8e8ed; --radius: clamp(14px, 2vw, 18px);
+--sp: clamp(16px, 4vw, 40px); --gap: clamp(10px, 2vw, 16px); }
 * { box-sizing: border-box; margin: 0; }
+html { -webkit-text-size-adjust: 100%; }
 body { font-family: -apple-system, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
-background: var(--bg); color: var(--ink); padding: 40px 20px 80px; }
-.wrap { max-width: 1080px; margin: 0 auto; }
-header h1 { font-size: 40px; letter-spacing: -0.02em; }
-header p { color: var(--sub); margin-top: 6px; font-size: 17px; }
-.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-gap: 14px; margin: 28px 0; }
-.kpi { background: var(--card); border-radius: var(--radius); padding: 18px; }
-.kpi .n { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; }
-.kpi .l { color: var(--sub); font-size: 13px; margin-top: 4px; }
-section { background: var(--card); border-radius: var(--radius);
-padding: 22px; margin-bottom: 16px; }
-section h2 { font-size: 21px; letter-spacing: -0.01em; margin-bottom: 4px; }
+background: var(--bg); color: var(--ink); overflow-wrap: anywhere;
+padding: var(--sp) clamp(16px, 4vw, 24px) calc(64px + env(safe-area-inset-bottom)); }
+.wrap { max-width: 1120px; margin: 0 auto; }
+header h1 { font-size: clamp(28px, 6vw, 40px); letter-spacing: -0.02em; }
+header p { color: var(--sub); margin-top: 6px; font-size: clamp(14px, 2.5vw, 17px); }
+.hdr { display: flex; flex-direction: column; gap: 14px; align-items: stretch; }
+.buscador-global { position: relative; min-width: 0; width: 100%; }
+.buscador-global input { width: 100%; min-height: 44px; padding: 11px 14px;
+border: 1px solid var(--line); border-radius: 999px; font-size: 14px;
+background: #fff; color: var(--ink); }
+.resultados-global { position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+box-shadow: 0 12px 32px rgba(0,0,0,.12); z-index: 30; }
+.resultados-global[hidden] { display: none; }
+.resultados-global button { display: flex; gap: 10px; align-items: center; width: 100%;
+border: none; background: #fff; padding: 8px 10px; cursor: pointer; text-align: left; font-size: 14px; }
+.resultados-global button[aria-selected="true"], .resultados-global button:hover { background: var(--bg); }
+.resultados-global img { width: 34px; height: 50px; object-fit: cover; border-radius: 6px; background: var(--line); }
+.resultados-global .rg-t { font-weight: 600; }
+.resultados-global .rg-s { color: var(--sub); font-size: 12px; }
+.kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+gap: 10px; margin: 24px 0; }
+.kpi { position: relative; min-width: 0; background: var(--card);
+border-radius: var(--radius); padding: 14px 48px 14px 14px; }
+.kpi .n { font-size: clamp(26px, 6vw, 34px); font-weight: 700; letter-spacing: -0.02em; }
+.kpi .l { color: var(--sub); font-size: 12px; margin-top: 4px; line-height: 1.25; }
+.kpi .filtro-wrap { position: absolute; top: 4px; right: 4px; }
+section { position: relative; background: var(--card); border-radius: var(--radius);
+padding: 16px; margin-bottom: 14px; container-type: inline-size; }
+section h2 { font-size: clamp(18px, 3vw, 21px); letter-spacing: -0.01em;
+margin-bottom: 4px; }
 section .hint { color: var(--sub); font-size: 13px; margin-bottom: 14px; }
+.section-head { display: flex; align-items: flex-start; justify-content: space-between;
+gap: 10px; margin-bottom: 14px; }
+.section-head > div:first-child { min-width: 0; }
+.section-head .hint { margin-bottom: 0; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th { text-align: left; color: var(--sub); font-weight: 500; font-size: 12px;
 text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 10px;
@@ -50,47 +75,31 @@ border-radius: 999px; padding: 2px 10px; font-weight: 600; font-size: 13px; }
 .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden;
 min-width: 90px; }
 .bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } header h1 { font-size: 30px; } }
+.grid2 { display: grid; grid-template-columns: 1fr; gap: var(--gap); }
 a { color: var(--accent); text-decoration: none; }
 td.t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 340px; }
 .nw { white-space: nowrap; }
 .np { color: var(--sub); font-weight: 700; font-size: 12px; letter-spacing: 0.1em; }
 .more-wrap { display: flex; justify-content: center; padding-top: 14px; }
 .more-btn { appearance: none; border: 1px solid var(--accent); background: #fff;
-color: var(--accent); border-radius: 999px; padding: 8px 18px; font-weight: 600;
-font-size: 13px; cursor: pointer; transition: transform .15s ease, background .15s ease; }
+color: var(--accent); border-radius: 999px; min-height: 44px; padding: 8px 18px;
+font-weight: 600; font-size: 13px; cursor: pointer; transition: transform .15s ease, background .15s ease; }
 .more-btn:hover { background: var(--accent); color: #fff; }
 .more-btn:active { transform: translateY(1px) scale(.98); }
 .more-btn[hidden] { display: none; }
 .count { color: var(--sub); font-size: 12px; text-align: center; margin-top: 8px; }
-.search { width: 100%; padding: 10px 14px; border: 1px solid var(--line);
+.search { width: 100%; min-height: 44px; padding: 11px 14px; border: 1px solid var(--line);
 border-radius: 999px; font-size: 14px; margin-bottom: 12px; background: #fff; color: var(--ink); }
-.hdr { display: flex; gap: 16px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; }
-.buscador-global { position: relative; min-width: 280px; flex: 0 1 340px; }
-.buscador-global input { width: 100%; padding: 10px 14px; border: 1px solid var(--line);
-border-radius: 999px; font-size: 14px; background: #fff; color: var(--ink); }
-.resultados-global { position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
-box-shadow: 0 12px 32px rgba(0,0,0,.12); z-index: 30; }
-.resultados-global[hidden] { display: none; }
-.resultados-global button { display: flex; gap: 10px; align-items: center; width: 100%;
-border: none; background: #fff; padding: 8px 10px; cursor: pointer; text-align: left; font-size: 14px; }
-.resultados-global button[aria-selected="true"], .resultados-global button:hover { background: var(--bg); }
-.resultados-global img { width: 34px; height: 50px; object-fit: cover; border-radius: 6px; background: var(--line); }
-.resultados-global .rg-t { font-weight: 600; }
-.resultados-global .rg-s { color: var(--sub); font-size: 12px; }
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex;
 align-items: center; justify-content: center; padding: 20px; z-index: 50; }
 .overlay[hidden] { display: none; }
 .ficha { background: #fff; border-radius: 20px; max-width: 760px; width: 100%;
 max-height: 88vh; overflow: auto; padding: 22px; position: relative; }
 .ficha-cerrar { position: absolute; top: 12px; right: 12px; border: 1px solid var(--line);
-background: #fff; border-radius: 999px; width: 32px; height: 32px; cursor: pointer; font-size: 16px; }
+background: #fff; border-radius: 999px; width: 44px; height: 44px; cursor: pointer; font-size: 18px; }
 .ficha-grid { display: grid; grid-template-columns: 150px 1fr; gap: 18px; }
-@media (max-width: 600px) { .ficha-grid { grid-template-columns: 1fr; } }
 .ficha img.poster { width: 150px; border-radius: 12px; background: var(--line); }
-.ficha h3 { font-size: 24px; letter-spacing: -0.01em; }
+.ficha h3 { font-size: clamp(20px, 4vw, 24px); letter-spacing: -0.01em; }
 .ficha .meta { color: var(--sub); font-size: 13px; margin: 6px 0 12px; }
 .ficha .sinopsis { font-size: 14px; line-height: 1.55; margin: 10px 0; }
 .ficha .bloque { font-size: 13px; margin-top: 10px; }
@@ -98,10 +107,8 @@ background: #fff; border-radius: 999px; width: 32px; height: 32px; cursor: point
 letter-spacing: 0.06em; color: var(--sub); margin-bottom: 4px; }
 tr[data-tt] { cursor: pointer; }
 footer { color: var(--sub); font-size: 12px; text-align: center; margin-top: 26px; }
-.poster-section { padding: 22px; }
-.section-head { display: flex; align-items: baseline; justify-content: space-between;
-gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-.poster-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.poster-section { padding: 16px; }
+.poster-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .poster-card { position: relative; border: none; background: none; padding: 0;
 text-align: left; cursor: pointer; border-radius: 12px; }
 .poster-card img, .poster-fallback { width: 100%; aspect-ratio: 2 / 3; object-fit: cover;
@@ -118,7 +125,93 @@ color: #fff; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weigh
 white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .poster-year { display: block; color: var(--sub); font-size: 12px; }
 .empty { color: var(--sub); font-size: 14px; }
-@media (max-width: 760px) { .poster-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.filtro-wrap { position: relative; flex: 0 0 auto; }
+.filtro-btn { display: inline-flex; align-items: center; justify-content: center;
+width: 44px; height: 44px; padding: 0; position: relative; border: 1px solid var(--line);
+background: #fff; color: var(--ink); border-radius: 999px; cursor: pointer; }
+.filtro-btn:hover { background: var(--bg); }
+.filtro-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.filtro-btn[disabled] { opacity: .4; cursor: not-allowed; }
+.filtro-btn svg { width: 18px; height: 18px; }
+.filtro-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px;
+padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff;
+font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.filtro-badge[hidden] { display: none; }
+.filtro-panel { position: absolute; top: calc(100% + 8px); right: 0;
+width: min(340px, calc(100vw - 40px)); max-height: min(70dvh, 520px); overflow: auto;
+background: #fff; border: 1px solid var(--line); border-radius: 16px;
+box-shadow: 0 18px 40px rgba(0,0,0,.16); padding: 14px; z-index: 40; }
+.filtro-panel[hidden] { display: none; }
+.filtro-panel h3 { font-size: 15px; margin-bottom: 8px; }
+.filtro-grupo { border-top: 1px solid var(--line); padding: 10px 0; }
+.filtro-grupo:first-of-type { border-top: 0; }
+.filtro-grupo > strong { display: block; font-size: 11px; text-transform: uppercase;
+letter-spacing: 0.06em; color: var(--sub); margin-bottom: 4px; }
+.filtro-opcion { display: flex; align-items: center; gap: 10px; min-height: 44px;
+font-size: 14px; cursor: pointer; }
+.filtro-opcion input { width: 18px; height: 18px; accent-color: var(--accent); }
+.filtro-acciones { display: flex; gap: 8px; justify-content: space-between;
+margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.filtro-limpiar, .filtro-cerrar { min-height: 44px; padding: 8px 14px; border-radius: 999px;
+font-size: 13px; font-weight: 600; cursor: pointer; }
+.filtro-limpiar { border: 0; background: var(--bg); color: var(--ink); }
+.filtro-cerrar { border: 1px solid var(--accent); background: #fff; color: var(--accent); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chips[hidden] { display: none; }
+.chip { display: inline-flex; align-items: center; gap: 4px; min-height: 32px;
+padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line);
+background: var(--bg); color: var(--ink); font-size: 12px; cursor: pointer; }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.leer-mas { display: none; margin-top: 8px; border: 0; background: none;
+color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; min-height: 44px; }
+.ancho-completo { width: 100%; }
+@container (max-width: 640px) {
+  .tabla-cards thead { display: none; }
+  .tabla-cards, .tabla-cards tbody, .tabla-cards tr, .tabla-cards td { display: block; width: 100%; }
+  .tabla-cards tr { border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+  .tabla-cards td { display: flex; justify-content: space-between; gap: 12px;
+    border: 0; padding: 3px 0; }
+  .tabla-cards td::before { content: attr(data-label); color: var(--sub);
+    font-size: 12px; font-weight: 500; flex: 0 0 auto; }
+  .tabla-cards td.t { display: block; font-size: 16px; font-weight: 600;
+    white-space: normal; overflow: visible; text-overflow: clip; max-width: none; padding-bottom: 6px; }
+  .tabla-cards td.t::before { display: none; }
+  .tabla-cards .nw { white-space: normal; }
+  .tabla-cards .bar { flex: 0 0 45%; }
+}
+@media (max-width: 640px) {
+  .tabla-cards thead { display: none; }
+  .tabla-cards, .tabla-cards tbody, .tabla-cards tr, .tabla-cards td { display: block; width: 100%; }
+  .tabla-cards tr { border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+  .tabla-cards td { display: flex; justify-content: space-between; gap: 12px; border: 0; padding: 3px 0; }
+  .tabla-cards td::before { content: attr(data-label); color: var(--sub); font-size: 12px; font-weight: 500; }
+  .tabla-cards td.t { display: block; font-size: 16px; font-weight: 600; white-space: normal;
+    overflow: visible; text-overflow: clip; max-width: none; padding-bottom: 6px; }
+  .tabla-cards td.t::before { display: none; }
+  .tabla-cards .nw { white-space: normal; }
+  .tabla-cards .bar { flex: 0 0 45%; }
+  .overlay { padding: 0; }
+  .ficha { width: 100%; height: 100dvh; max-height: none; border-radius: 0; }
+  .ficha-grid { grid-template-columns: 1fr; }
+  .ficha img.poster { width: 96px; }
+  .leer-mas { display: inline-flex; align-items: center; }
+}
+@media (min-width: 480px) { .poster-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 640px) {
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  section, .poster-section { padding: 22px; }
+  .poster-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+}
+@media (min-width: 900px) {
+  .kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .grid2 { grid-template-columns: 1fr 1fr; }
+  .hdr { flex-direction: row; align-items: flex-end; justify-content: space-between; }
+  .buscador-global { width: auto; flex: 0 1 340px; }
+  .poster-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
 """
 
 
@@ -160,6 +253,49 @@ def fila_tabla(celdas: list[str], cls_first: str | None = None,
         sufijo = (" " + " ".join(attrs)) if attrs else ""
         partes.append(f"<td{sufijo}>{celda}</td>")
     return "<tr>" + "".join(partes) + "</tr>"
+
+
+ICONO_FILTRO = (
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+    'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" '
+    'aria-hidden="true" focusable="false">'
+    '<path d="M4 5h16l-6.5 7.5V19l-3 1.5v-8L4 5z"/></svg>')
+
+
+def boton_filtro(id_seccion: str, etiqueta: str, disabled: bool = False) -> str:
+    """Botón Apple-style y panel vacío que rellena el motor de filtros."""
+    id_html = html.escape(id_seccion, quote=True)
+    etiqueta_html = html.escape(etiqueta, quote=True)
+    deshabilitado = " disabled" if disabled else ""
+    return (
+        '<div class="filtro-wrap">'
+        f'<button type="button" class="filtro-btn" data-filtro="{id_html}" '
+        f'aria-label="Filtrar {etiqueta_html}" aria-haspopup="dialog" '
+        f'aria-expanded="false" aria-controls="filtro-{id_html}"{deshabilitado}>'
+        f'{ICONO_FILTRO}<span class="filtro-badge" hidden></span></button>'
+        f'<div class="filtro-panel" id="filtro-{id_html}" role="dialog" '
+        f'aria-label="Filtros de {etiqueta_html}" hidden></div></div>')
+
+
+def cabecera_seccion(id_seccion: str, titulo: str, hint: str,
+                    disabled: bool = False) -> str:
+    """Cabecera con título, pista, botón de filtro y chips activos."""
+    id_html = html.escape(id_seccion, quote=True)
+    titulo_html = html.escape(titulo)
+    return (
+        '<div class="section-head"><div>'
+        f'<h2 id="titulo-{id_html}" tabindex="-1">{titulo_html}</h2>'
+        f'<p class="hint">{html.escape(hint)}</p></div>'
+        f'{boton_filtro(id_seccion, titulo, disabled)}</div>'
+        f'<div class="chips" id="chips-{id_html}" aria-live="polite" hidden></div>')
+
+
+def tarjeta_kpi(clave: str, valor: str, etiqueta: str) -> str:
+    """KPI con icono de filtro; el preset se aplica en Lista completa."""
+    return (
+        f'<div class="kpi" data-kpi="{html.escape(clave, quote=True)}">'
+        f'<div class="n">{valor}</div><div class="l">{html.escape(etiqueta)}</div>'
+        f'{boton_filtro("kpi-" + clave, "Filtrar " + etiqueta)}</div>')
 
 
 def _iniciales(titulo: str) -> str:
@@ -254,21 +390,47 @@ def generar(db_path: Path) -> str:
     c.close()
 
     e = html.escape
-    kpis = (f'<div class="kpis">'
-            f'<div class="kpi" data-kpi="total"><div class="n">{total}</div><div class="l">Títulos</div></div>'
-            f'<div class="kpi" data-kpi="valoradas"><div class="n">{valoradas}</div><div class="l">Valoradas por ti</div></div>'
-            f'<div class="kpi" data-kpi="pendientes"><div class="n">{pendientes}</div><div class="l">En seguimiento</div></div>'
-            f'<div class="kpi" data-kpi="media"><div class="n">{media or "-"}</div><div class="l">Tu nota media</div></div>'
-            f'<div class="kpi" data-kpi="faltan"><div class="n">{faltan}</div><div class="l">Sin enriquecer</div></div>'
-            f'</div>')
+    kpis = ('<div class="kpis">'
+            + tarjeta_kpi("total", str(total), "Títulos")
+            + tarjeta_kpi("valoradas", str(valoradas), "Valoradas por ti")
+            + tarjeta_kpi("pendientes", str(pendientes), "En seguimiento")
+            + tarjeta_kpi("media", str(media or "-"), "Tu nota media")
+            + tarjeta_kpi("faltan", str(faltan), "Sin enriquecer")
+            + '</div>')
+    posters_head = cabecera_seccion(
+        "posters", "Tus favoritas, en cartel",
+        "Top 10 por tu nota. Pulsa una para abrir la ficha.")
+    top_head = cabecera_seccion(
+        "top", "Tus favoritas", "Ordenadas por tu nota. 15 visibles, carga 15 más.")
+    joyas_head = cabecera_seccion(
+        "joyas", "Joyas que tú amas",
+        "Tu nota supera a IMDb en 1.5+. 15 visibles, carga 15 más.")
+    decep_head = cabecera_seccion(
+        "decepciones", "Decepciones",
+        "IMDb te supera en 1.5+. 15 visibles, carga 15 más.")
+    generos_head = cabecera_seccion(
+        "generos", "Géneros que más te gustan",
+        "Nota media de tus valoradas. 15 visibles, carga 15 más.", disabled=True)
+    directores_head = cabecera_seccion(
+        "directores", "Directores frecuentes",
+        "En tus títulos valorados. 15 visibles, carga 15 más.", disabled=True)
+    actores_head = cabecera_seccion(
+        "actores", "Actores de confianza",
+        "Tu nota media por actor (mínimo 2 títulos). 15 visibles, carga 15 más.",
+        disabled=True)
+    lista_head = cabecera_seccion(
+        "lista", "Lista completa",
+        f"Los {len(todas)} títulos. Filtra sin recargar. 15 visibles, carga 15 más.")
+    seguimiento_head = cabecera_seccion(
+        "seguimiento", "En seguimiento",
+        "Sin tu nota todavía. 15 visibles, carga 15 más.")
 
     posters = "".join(_tarjeta_poster(r) for r in top_posters) or (
         '<p class="empty">Aún no has valorado nada.</p>')
     posters_html = (
-        '<section class="poster-section" aria-labelledby="posters-title">'
-        '<div class="section-head"><h2 id="posters-title">Tus favoritas, en cartel</h2>'
-        '<span class="hint">Top 10 por tu nota. Pulsa una para abrir la ficha.</span></div>'
-        f'<div class="poster-grid">{posters}</div></section>')
+        '<section class="poster-section" id="seccion-posters" '
+        'aria-labelledby="titulo-posters">'
+        f'{posters_head}<div class="poster-grid">{posters}</div></section>')
 
     top_rows = "".join(
         fila_tabla([f'<span class="pill">{r["my_rating"]}</span>',
@@ -634,27 +796,27 @@ def generar(db_path: Path) -> str:
 <div class="resultados-global" id="resultados-global" role="listbox" hidden></div></div></div></header>
 {kpis}
 {posters_html}
-<section><h2>Tus favoritas</h2><div class="hint">Ordenadas por tu nota. 15 visibles, carga 15 más.</div>
-<table class="paginada" id="tabla-top" data-seccion="top"><thead><tr><th>Tu nota</th><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
+<section id="seccion-top" aria-labelledby="titulo-top">{top_head}
+<table class="paginada tabla-cards" id="tabla-top" data-seccion="top"><thead><tr><th>Tu nota</th><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
 <div class="grid2">
-<section><h2>Joyas que tú amas</h2><div class="hint">Tu nota supera a IMDb en 1.5+. 15 visibles, carga 15 más.</div>
-<table class="paginada" id="tabla-joyas" data-seccion="joyas"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{joya_rows}</tbody></table></section>
-<section><h2>Decepciones</h2><div class="hint">IMDb te supera en 1.5+. 15 visibles, carga 15 más.</div>
-<table class="paginada" id="tabla-decepciones" data-seccion="decepciones"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{decep_rows}</tbody></table></section>
+<section id="seccion-joyas" aria-labelledby="titulo-joyas">{joyas_head}
+<table class="paginada tabla-cards" id="tabla-joyas" data-seccion="joyas"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{joya_rows}</tbody></table></section>
+<section id="seccion-decepciones" aria-labelledby="titulo-decepciones">{decep_head}
+<table class="paginada tabla-cards" id="tabla-decepciones" data-seccion="decepciones"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{decep_rows}</tbody></table></section>
 </div>
 <div class="grid2">
-<section><h2>Géneros que más te gustan</h2><div class="hint">Nota media de tus valoradas. 15 visibles, carga 15 más.</div>
-<table class="paginada" id="tabla-generos" data-seccion="generos"><thead><tr><th>Género</th><th>Títulos</th><th></th><th>Media</th></tr></thead><tbody>{gen_rows}</tbody></table></section>
-<section><h2>Directores frecuentes</h2><div class="hint">En tus títulos valorados. 15 visibles, carga 15 más.</div>
-<table class="paginada" id="tabla-directores" data-seccion="directores"><thead><tr><th>Director</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{dir_rows}</tbody></table></section>
+<section id="seccion-generos" aria-labelledby="titulo-generos">{generos_head}
+<table class="paginada tabla-cards" id="tabla-generos" data-seccion="generos"><thead><tr><th>Género</th><th>Títulos</th><th></th><th>Media</th></tr></thead><tbody>{gen_rows}</tbody></table></section>
+<section id="seccion-directores" aria-labelledby="titulo-directores">{directores_head}
+<table class="paginada tabla-cards" id="tabla-directores" data-seccion="directores"><thead><tr><th>Director</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{dir_rows}</tbody></table></section>
 </div>
-<section><h2>Actores de confianza</h2><div class="hint">Tu nota media por actor (mínimo 2 títulos). 15 visibles, carga 15 más.</div>
-<table class="paginada" id="tabla-actores" data-seccion="actores"><thead><tr><th>Actor</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{actor_rows}</tbody></table></section>
-<section id="lista"><h2>Lista completa</h2><div class="hint">Los {ntotal} títulos. Filtra sin recargar. 15 visibles, carga 15 más.</div>
+<section id="seccion-actores" aria-labelledby="titulo-actores">{actores_head}
+<table class="paginada tabla-cards" id="tabla-actores" data-seccion="actores"><thead><tr><th>Actor</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{actor_rows}</tbody></table></section>
+<section id="lista" aria-labelledby="titulo-lista">{lista_head}
 <input class="search" id="q" type="search" placeholder="Filtra por título o género…" aria-label="Filtrar lista completa">
-<table class="paginada" id="tabla-todas" data-seccion="lista"><thead><tr><th>Título</th><th>Tipo</th><th>Año</th><th>Géneros</th><th>IMDb</th><th>Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
-<section><h2>En seguimiento</h2><div class="hint">Sin tu nota todavía. 15 visibles, carga 15 más.</div>
-<table class="paginada" id="tabla-seguimiento" data-seccion="seguimiento"><thead><tr><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{pend_rows}</tbody></table></section>
+<table class="paginada tabla-cards" id="tabla-todas" data-seccion="lista"><thead><tr><th>Título</th><th>Tipo</th><th>Año</th><th>Géneros</th><th>IMDb</th><th>Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
+<section id="seccion-seguimiento" aria-labelledby="titulo-seguimiento">{seguimiento_head}
+<table class="paginada tabla-cards" id="tabla-seguimiento" data-seccion="seguimiento"><thead><tr><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{pend_rows}</tbody></table></section>
 <div class="overlay" id="overlay" hidden><div class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
 <button class="ficha-cerrar" id="ficha-cerrar" aria-label="Cerrar ficha">×</button>
 <div id="ficha-contenido"></div></div></div>
