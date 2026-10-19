@@ -89,12 +89,27 @@ class TestVistaHtml(unittest.TestCase):
 
     def test_css_responsive_y_controles_de_filtro(self):
         pagina = self._generar_con_fixture()
-        for marcador in ("@container", "clamp(", "100dvh",
+        for marcador in ("@container", "clamp(", "100dvh", "[hidden]",
                          "prefers-reduced-motion", "env(safe-area-inset-bottom)"):
             self.assertIn(marcador, pagina)
         self.assertGreaterEqual(pagina.count('class="filtro-btn"'), 10)
         for marcador in ('data-kpi="media"', 'data-seccion="top"',
                          'aria-haspopup="dialog"', 'class="filtro-panel"'):
+            self.assertIn(marcador, pagina)
+
+    def test_ficha_sinopsis_al_final_y_ancho_completo(self):
+        pagina = self._generar_con_fixture()
+        inicio = pagina.index('<template id="ficha-plantilla"')
+        plantilla = pagina[inicio:pagina.index("</template>", inicio)]
+        self.assertLess(plantilla.index('class="ficha-cabecera"'),
+                        plantilla.index('class="ficha-sinopsis'))
+        self.assertIn('class="ficha-sinopsis bloque ancho-completo"', plantilla)
+        self.assertIn('id="ficha-sinopsis-texto"', plantilla)
+        self.assertIn('id="ficha-leer-mas"', plantilla)
+
+    def test_ficha_plegable_en_movil(self):
+        pagina = self._generar_con_fixture()
+        for marcador in ("-webkit-line-clamp", "aria-expanded", "Leer más"):
             self.assertIn(marcador, pagina)
 
     def test_catalogo_escapa_cierre_de_script(self):
@@ -138,7 +153,7 @@ class TestVistaHtml(unittest.TestCase):
         # Buscador global + ficha overlay.
         for marcador in ('id="buscador-global"', 'id="resultados-global"',
                           'id="overlay"', 'id="indice-data"',
-                          'id="fichas-data"', 'abrirFicha'):
+                          'id="ficha-plantilla"', 'abrirFicha'):
             self.assertIn(marcador, pagina)
         tmp.cleanup()
 

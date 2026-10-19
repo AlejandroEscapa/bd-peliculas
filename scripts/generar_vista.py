@@ -26,6 +26,7 @@ CSS = """
 --accent: #0071e3; --line: #e8e8ed; --radius: clamp(14px, 2vw, 18px);
 --sp: clamp(16px, 4vw, 40px); --gap: clamp(10px, 2vw, 16px); }
 * { box-sizing: border-box; margin: 0; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body { font-family: -apple-system, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
 background: var(--bg); color: var(--ink); overflow-wrap: anywhere;
@@ -97,14 +98,23 @@ align-items: center; justify-content: center; padding: 20px; z-index: 50; }
 max-height: 88vh; overflow: auto; padding: 22px; position: relative; }
 .ficha-cerrar { position: absolute; top: 12px; right: 12px; border: 1px solid var(--line);
 background: #fff; border-radius: 999px; width: 44px; height: 44px; cursor: pointer; font-size: 18px; }
-.ficha-grid { display: grid; grid-template-columns: 150px 1fr; gap: 18px; }
-.ficha img.poster { width: 150px; border-radius: 12px; background: var(--line); }
+.ficha-cabecera { display: grid; grid-template-columns: 150px 1fr; gap: 18px; }
+.ficha-lateral { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.ficha img.poster { width: 100%; aspect-ratio: 2 / 3; object-fit: cover;
+border-radius: 12px; background: var(--line); }
+.ficha-lateral .poster-fallback { width: 100%; aspect-ratio: 2 / 3; border-radius: 12px;
+font-size: 28px; }
+.ficha-lateral .pill { font-size: 13px; }
+.ficha-lateral a { font-size: 13px; font-weight: 600; }
 .ficha h3 { font-size: clamp(20px, 4vw, 24px); letter-spacing: -0.01em; }
 .ficha .meta { color: var(--sub); font-size: 13px; margin: 6px 0 12px; }
-.ficha .sinopsis { font-size: 14px; line-height: 1.55; margin: 10px 0; }
+.ficha .sinopsis { font-size: 14px; line-height: 1.55; margin: 10px 0 0; }
 .ficha .bloque { font-size: 13px; margin-top: 10px; }
-.ficha .bloque b { display: block; font-size: 12px; text-transform: uppercase;
-letter-spacing: 0.06em; color: var(--sub); margin-bottom: 4px; }
+.ficha .bloque b, .ficha-sinopsis b { display: block; font-size: 12px;
+text-transform: uppercase; letter-spacing: 0.06em; color: var(--sub);
+margin-bottom: 4px; }
+.ficha-sinopsis { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.ficha-sinopsis .leer-mas { display: none; }
 tr[data-tt] { cursor: pointer; }
 footer { color: var(--sub); font-size: 12px; text-align: center; margin-top: 26px; }
 .poster-section { padding: 16px; }
@@ -192,8 +202,10 @@ color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; min-he
   .tabla-cards .bar { flex: 0 0 45%; }
   .overlay { padding: 0; }
   .ficha { width: 100%; height: 100dvh; max-height: none; border-radius: 0; }
-  .ficha-grid { grid-template-columns: 1fr; }
-  .ficha img.poster { width: 96px; }
+  .ficha-cabecera { grid-template-columns: 96px 1fr; gap: 14px; }
+  .ficha .sinopsis.plegada { display: -webkit-box; -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4; overflow: hidden; }
+  .ficha-sinopsis .leer-mas { display: inline-flex; align-items: center; }
   .leer-mas { display: inline-flex; align-items: center; }
 }
 @media (min-width: 480px) { .poster-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -503,7 +515,6 @@ def generar(db_path: Path) -> str:
     for r in genero_rows:
         gen_por_tt.setdefault(r["tt"], []).append(r["genre"])
     indice = []
-    fichas_map: dict[str, dict] = {}
     catalogo_map: dict[str, dict] = {}
     for r in fichas:
         tt = r["tt"]
@@ -521,21 +532,6 @@ def generar(db_path: Path) -> str:
             "a": ", ".join(x["name"] for x in cast_por_tt.get(tt, [])[:8]),
             "g": ", ".join(gen_por_tt.get(tt, [])),
         })
-        fichas_map[tt] = {
-            "titulo": titulo,
-            "original": r["original_title"] or "",
-            "url": r["url"] or "",
-            "tipo": r["title_type"] or "",
-            "year": r["year"],
-            "imdb": r["imdb_rating"],
-            "nota": r["my_rating"],
-            "sinopsis": r["synopsis"] or "",
-            "poster": r["poster_url"] or "",
-            "cast": cast_por_tt.get(tt, [])[:8],
-            "directores": dir_por_tt.get(tt, []),
-            "paises": pais_por_tt.get(tt, []),
-            "generos": gen_por_tt.get(tt, []),
-        }
         catalogo_map[tt] = {
             "titulo": titulo,
             "original": r["original_title"] or "",
@@ -563,7 +559,6 @@ def generar(db_path: Path) -> str:
             "generos": gen_por_tt.get(tt, []),
         }
     indice_json = json.dumps(indice, ensure_ascii=False).replace("</", "<\\/")
-    fichas_json = json.dumps(fichas_map, ensure_ascii=False).replace("</", "<\\/")
     catalogo_json = json.dumps(catalogo_map, ensure_ascii=False).replace("</", "<\\/")
     pend_rows = "".join(
         fila_tabla([f'<span class="nw">{e(r["title_es"] or r["original_title"] or "")}'
@@ -624,49 +619,66 @@ def generar(db_path: Path) -> str:
     if (info) info.textContent = vistos + ' resultados para "' + q.value + '"';
   });
   // Buscador global + ficha overlay.
+  const FICHAS = JSON.parse(document.getElementById('catalogo-data').textContent || '{}');
   const indice = JSON.parse(document.getElementById('indice-data').textContent || '[]');
-  const fichas = JSON.parse(document.getElementById('fichas-data').textContent || '{}');
+  const iniciales = (titulo) => (titulo || '').split(/ +/).filter(Boolean).slice(0, 2)
+    .map((p) => p[0]).join('').toUpperCase() || '?';
   const bg = document.getElementById('buscador-global');
   const rg = document.getElementById('resultados-global');
   const overlay = document.getElementById('overlay');
   const contenido = document.getElementById('ficha-contenido');
   const cerrarBtn = document.getElementById('ficha-cerrar');
+  const plantilla = document.getElementById('ficha-plantilla');
   let sel = -1;
   let actual = [];
   let focoPrevio = null;
   const cerrarFicha = () => {
     if (overlay.hidden) return;
     overlay.hidden = true;
-    contenido.innerHTML = '';
+    contenido.replaceChildren();
     document.body.style.overflow = '';
     if (focoPrevio && typeof focoPrevio.focus === 'function') focoPrevio.focus();
   };
   const abrirFicha = (tt) => {
-    const f = fichas[tt];
-    if (!f) return;
-    contenido.innerHTML = '';
-    const grid = document.createElement('div');
-    grid.className = 'ficha-grid';
-    if (f.poster) {
-      const img = document.createElement('img');
-      img.className = 'poster';
-      img.src = f.poster;
-      img.alt = 'Póster de ' + f.titulo;
-      img.loading = 'lazy';
-      grid.appendChild(img);
-    }
-    const lado = document.createElement('div');
-    const h = document.createElement('h3');
-    h.id = 'ficha-titulo';
+    const f = FICHAS[tt];
+    if (!f || !plantilla) return;
+    contenido.replaceChildren(plantilla.content.cloneNode(true));
+    const q = (sel) => contenido.querySelector(sel);
+    const h = q('#ficha-titulo');
     h.textContent = f.titulo;
-    lado.appendChild(h);
-    const meta = document.createElement('div');
-    meta.className = 'meta';
+    const meta = q('#ficha-meta');
     const partes = [f.year || '?', f.tipo || '',
+      (f.duracion ? f.duracion + ' min' : ''),
       (f.nota != null ? 'Tu nota: ' + f.nota : 'Sin valorar'),
       (f.imdb != null ? 'IMDb: ' + f.imdb : '')].filter(Boolean);
     meta.textContent = partes.join(' · ');
-    lado.appendChild(meta);
+    const img = q('#ficha-poster');
+    const fallback = q('#ficha-poster-fallback');
+    if (f.poster) {
+      img.src = f.poster;
+      img.alt = 'Póster de ' + f.titulo;
+      img.hidden = false;
+      fallback.hidden = true;
+    } else {
+      img.hidden = true;
+      fallback.hidden = false;
+      fallback.textContent = iniciales(f.titulo);
+    }
+    const nota = q('#ficha-nota');
+    if (f.nota != null) {
+      nota.textContent = f.nota;
+      nota.hidden = false;
+    } else {
+      nota.hidden = true;
+    }
+    const imdb = q('#ficha-imdb');
+    if (f.url) {
+      imdb.href = f.url;
+      imdb.hidden = false;
+    } else {
+      imdb.hidden = true;
+    }
+    const bloques = q('#ficha-bloques');
     const pasa = (titulo, texto) => {
       if (!texto) return;
       const b = document.createElement('div');
@@ -676,28 +688,31 @@ def generar(db_path: Path) -> str:
       b.appendChild(tt2);
       const p = document.createElement('div');
       p.textContent = texto;
-      if (titulo === 'Sinopsis') p.className = 'sinopsis';
       b.appendChild(p);
-      lado.appendChild(b);
+      bloques.appendChild(b);
     };
-    pasa('Sinopsis', f.sinopsis || 'Sin sinopsis disponible todavía.');
-    pasa('Reparto', (f.cast || []).map((m) => m.character ? m.name + ' como ' + m.character : m.name).join(', '));
+    pasa('Reparto', (f.reparto || []).map((m) =>
+      m.personaje ? m.nombre + ' como ' + m.personaje : m.nombre).join(', '));
     pasa('Dirección', (f.directores || []).join(', '));
     pasa('Géneros', (f.generos || []).join(', '));
     pasa('Países', (f.paises || []).join(', '));
-    if (f.url) {
-      const b = document.createElement('div');
-      b.className = 'bloque';
-      const a = document.createElement('a');
-      a.href = f.url;
-      a.target = '_blank';
-      a.rel = 'noopener';
-      a.textContent = 'Ver en IMDb';
-      b.appendChild(a);
-      lado.appendChild(b);
-    }
-    grid.appendChild(lado);
-    contenido.appendChild(grid);
+    const sinopsis = q('#ficha-sinopsis-texto');
+    const textoSinopsis = f.sinopsis || 'Sin sinopsis disponible todavía.';
+    sinopsis.textContent = textoSinopsis;
+    const leerMas = q('#ficha-leer-mas');
+    leerMas.hidden = true;
+    requestAnimationFrame(() => {
+      if (sinopsis.scrollHeight > sinopsis.clientHeight + 1) {
+        leerMas.hidden = false;
+        leerMas.addEventListener('click', () => {
+          const plegada = sinopsis.classList.toggle('plegada');
+          leerMas.textContent = plegada ? 'Leer más' : 'Leer menos';
+          leerMas.setAttribute('aria-expanded', String(!plegada));
+        });
+      } else {
+        sinopsis.classList.remove('plegada');
+      }
+    });
     focoPrevio = document.activeElement;
     overlay.hidden = false;
     document.body.style.overflow = 'hidden';
@@ -820,10 +835,30 @@ def generar(db_path: Path) -> str:
 <div class="overlay" id="overlay" hidden><div class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
 <button class="ficha-cerrar" id="ficha-cerrar" aria-label="Cerrar ficha">×</button>
 <div id="ficha-contenido"></div></div></div>
+<template id="ficha-plantilla">
+  <div class="ficha-cabecera">
+    <div class="ficha-lateral">
+      <img class="poster" id="ficha-poster" alt="" loading="lazy">
+      <span class="poster-fallback" id="ficha-poster-fallback" aria-hidden="true"></span>
+      <span class="pill" id="ficha-nota"></span>
+      <a id="ficha-imdb" target="_blank" rel="noopener">Ver en IMDb</a>
+    </div>
+    <div class="ficha-datos">
+      <h3 id="ficha-titulo"></h3>
+      <div class="meta" id="ficha-meta"></div>
+      <div id="ficha-bloques"></div>
+    </div>
+  </div>
+  <div class="ficha-sinopsis bloque ancho-completo">
+    <b>Sinopsis</b>
+    <p class="sinopsis plegada" id="ficha-sinopsis-texto"></p>
+    <button type="button" class="leer-mas" id="ficha-leer-mas"
+            aria-expanded="false">Leer más</button>
+  </div>
+</template>
 <footer>Generado desde tu base local · auto-regenerable con scripts/auto_vista.py</footer>
 <script type="application/json" id="catalogo-data">{catalogo_json}</script>
 <script type="application/json" id="indice-data">{indice_json}</script>
-<script type="application/json" id="fichas-data">{fichas_json}</script>
 </div>{js}</body></html>"""
 
 
