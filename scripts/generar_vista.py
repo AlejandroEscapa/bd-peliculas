@@ -160,6 +160,8 @@ letter-spacing: 0.06em; color: var(--sub); margin-bottom: 4px; }
 .filtro-opcion { display: flex; align-items: center; gap: 10px; min-height: 44px;
 font-size: 14px; cursor: pointer; }
 .filtro-opcion input { width: 18px; height: 18px; accent-color: var(--accent); }
+.filtro-select { width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line);
+border-radius: 10px; background: #fff; color: var(--ink); font-size: 14px; }
 .filtro-acciones { display: flex; gap: 8px; justify-content: space-between;
 margin-top: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .filtro-limpiar, .filtro-cerrar { min-height: 44px; padding: 8px 14px; border-radius: 999px;
@@ -200,6 +202,8 @@ color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; min-he
   .tabla-cards td.t::before { display: none; }
   .tabla-cards .nw { white-space: normal; }
   .tabla-cards .bar { flex: 0 0 45%; }
+  .filtro-panel { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
+    top: auto; width: auto; max-height: 60dvh; }
   .overlay { padding: 0; }
   .ficha { width: 100%; height: 100dvh; max-height: none; border-radius: 0; }
   .ficha-cabecera { grid-template-columns: 96px 1fr; gap: 14px; }
@@ -307,7 +311,7 @@ def tarjeta_kpi(clave: str, valor: str, etiqueta: str) -> str:
     return (
         f'<div class="kpi" data-kpi="{html.escape(clave, quote=True)}">'
         f'<div class="n">{valor}</div><div class="l">{html.escape(etiqueta)}</div>'
-        f'{boton_filtro("kpi-" + clave, "Filtrar " + etiqueta)}</div>')
+        f'{boton_filtro("kpi-" + clave, etiqueta)}</div>')
 
 
 def _iniciales(titulo: str) -> str:
@@ -442,7 +446,8 @@ def generar(db_path: Path) -> str:
     posters_html = (
         '<section class="poster-section" id="seccion-posters" '
         'aria-labelledby="titulo-posters">'
-        f'{posters_head}<div class="poster-grid">{posters}</div></section>')
+        f'{posters_head}<div class="poster-grid">{posters}</div>'
+        '<div class="count" id="count-posters" aria-live="polite"></div></section>')
 
     top_rows = "".join(
         fila_tabla([f'<span class="pill">{r["my_rating"]}</span>',
@@ -514,24 +519,10 @@ def generar(db_path: Path) -> str:
     gen_por_tt: dict[str, list[str]] = {}
     for r in genero_rows:
         gen_por_tt.setdefault(r["tt"], []).append(r["genre"])
-    indice = []
     catalogo_map: dict[str, dict] = {}
     for r in fichas:
         tt = r["tt"]
         titulo = r["title_es"] or r["original_title"] or tt
-        indice.append({
-            "tt": tt,
-            "t": titulo,
-            "o": r["original_title"] or "",
-            "y": r["year"],
-            "tipo": r["title_type"] or "",
-            "nota": r["my_rating"],
-            "imdb": r["imdb_rating"],
-            "poster": r["poster_url"] or "",
-            "d": ", ".join(dir_por_tt.get(tt, [])),
-            "a": ", ".join(x["name"] for x in cast_por_tt.get(tt, [])[:8]),
-            "g": ", ".join(gen_por_tt.get(tt, [])),
-        })
         catalogo_map[tt] = {
             "titulo": titulo,
             "original": r["original_title"] or "",
@@ -558,7 +549,6 @@ def generar(db_path: Path) -> str:
             "paises": pais_por_tt.get(tt, []),
             "generos": gen_por_tt.get(tt, []),
         }
-    indice_json = json.dumps(indice, ensure_ascii=False).replace("</", "<\\/")
     catalogo_json = json.dumps(catalogo_map, ensure_ascii=False).replace("</", "<\\/")
     pend_rows = "".join(
         fila_tabla([f'<span class="nw">{e(r["title_es"] or r["original_title"] or "")}'
@@ -570,10 +560,293 @@ def generar(db_path: Path) -> str:
     js = """<script>
 (function () {
   const PASO = 15;
-  document.querySelectorAll('table.paginada').forEach((tbl) => {
-    const rows = Array.from(tbl.querySelectorAll('tbody tr'));
-    if (rows.length <= PASO) return;
-    let visibles = PASO;
+  const CLAVE = 'db-peliculas:filtros:v1';
+  const FICHAS = JSON.parse(document.getElementById('catalogo-data').textContent || '{}');
+  const CATALOGO = Object.entries(FICHAS).map(([tt, f]) => Object.assign({ tt }, f));
+  const texto = (v) => (v == null ? '' : String(v));
+  const decadaDe = (f) => (f.year ? String(Math.floor(Number(f.year) / 10) * 10) : '');
+  const MEDIA = (() => {
+    const notas = CATALOGO.filter((x) => x.nota != null).map((x) => x.nota);
+    return notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : 0;
+  })();
+  const buscaTexto = (f) => [
+    f.titulo, f.original, (f.directores || []).join(' '),
+    (f.reparto || []).map((x) => x.nombre).join(' '),
+    (f.generos || []).join(' ')
+  ].join(' ').toLowerCase();
+  const mostrarGeneros = (lista) => {
+    const partes = lista || [];
+    let t = partes.slice(0, 3).join(', ');
+    if (partes.length > 3) t += '...';
+    return t || '-';
+  };
+  const valoresUnicos = (datos, obtener) => {
+    const set = new Set();
+    datos.forEach((f) => (obtener(f) || []).forEach((v) => { if (v) set.add(v); }));
+    return [...set].sort((a, b) => a.localeCompare(b, 'es'))
+      .map((v) => ({ valor: v, etiqueta: v }));
+  };
+  const opcion = (valor, etiqueta, soloEn) => ({ valor, etiqueta, soloEn });
+
+  const FACETAS = {
+    tipo: {
+      etiqueta: 'Tipo',
+      opciones: (datos) => valoresUnicos(datos, (f) => [f.tipo]),
+      prueba: (f, v) => f.tipo === v
+    },
+    genero: {
+      etiqueta: 'Género',
+      opciones: (datos) => valoresUnicos(datos, (f) => f.generos || []),
+      prueba: (f, v) => (f.generos || []).includes(v)
+    },
+    decada: {
+      etiqueta: 'Década',
+      opciones: (datos) => valoresUnicos(datos, (f) => [decadaDe(f)])
+        .sort((a, b) => Number(b.valor) - Number(a.valor))
+        .map((o) => ({ valor: o.valor, etiqueta: o.valor + '–' + (Number(o.valor) + 9) })),
+      prueba: (f, v) => decadaDe(f) === v
+    },
+    nota: {
+      etiqueta: 'Tu nota',
+      opciones: () => [
+        opcion('10', '10'), opcion('9', '9–9.9'), opcion('8', '8–8.9'),
+        opcion('7', '7–7.9'), opcion('6', '6–6.9'), opcion('5', '5 o menos'),
+        opcion('np', 'Sin nota', ['lista']),
+        opcion('media_alta', 'Por encima de mi media'),
+        opcion('media_baja', 'Por debajo de mi media')
+      ],
+      prueba: (f, v) => {
+        const n = f.nota;
+        if (v === 'np') return n == null;
+        if (v === 'media_alta') return n != null && n > MEDIA;
+        if (v === 'media_baja') return n != null && n < MEDIA;
+        if (n == null) return false;
+        if (v === '10') return n === 10;
+        if (v === '5') return n < 6;
+        const base = Number(v);
+        return n >= base && n < base + 1;
+      }
+    },
+    imdb: {
+      etiqueta: 'IMDb',
+      opciones: () => [
+        opcion('9', '9+'), opcion('8', '8–8.9'), opcion('7', '7–7.9'),
+        opcion('6', '6–6.9'), opcion('menos6', 'Menos de 6'),
+        opcion('np', 'Sin IMDb', ['lista', 'seguimiento'])
+      ],
+      prueba: (f, v) => {
+        const n = f.imdb;
+        if (v === 'np') return n == null;
+        if (n == null) return false;
+        if (v === '9') return n >= 9;
+        if (v === 'menos6') return n < 6;
+        const base = Number(v);
+        return n >= base && n < base + 1;
+      }
+    },
+    estado: {
+      etiqueta: 'Estado',
+      opciones: () => [opcion('rated', 'Valorada'), opcion('watchlist', 'Pendiente')],
+      prueba: (f, v) => f.estado === v
+    },
+    calidad: {
+      etiqueta: 'Calidad de ficha',
+      opciones: () => [
+        opcion('sin_sinopsis', 'Sin sinopsis'), opcion('sin_reparto', 'Sin reparto'),
+        opcion('sin_poster', 'Sin póster'), opcion('completa', 'Ficha completa')
+      ],
+      prueba: (f, v) => {
+        if (v === 'sin_sinopsis') return !!f.sin_sinopsis;
+        if (v === 'sin_reparto') return !!f.sin_reparto;
+        if (v === 'sin_poster') return !f.poster;
+        return !f.sin_sinopsis && !f.sin_reparto && !!f.poster;
+      }
+    },
+    diferencia: {
+      etiqueta: 'Diferencia con IMDb',
+      opciones: () => [
+        opcion('p15', '+1.5–1.9', ['joyas']),
+        opcion('p20', '+2–2.4', ['joyas']),
+        opcion('p25', '+2.5 o más', ['joyas']),
+        opcion('n15', '−1.5–−1.9', ['decepciones']),
+        opcion('n20', '−2–−2.4', ['decepciones']),
+        opcion('n25', '−2.5 o menos', ['decepciones'])
+      ],
+      prueba: (f, v) => {
+        const d = f.diferencia;
+        if (d == null) return false;
+        if (v === 'p15') return d >= 1.5 && d < 2;
+        if (v === 'p20') return d >= 2 && d < 2.5;
+        if (v === 'p25') return d >= 2.5;
+        if (v === 'n15') return d <= -1.5 && d > -2;
+        if (v === 'n20') return d <= -2 && d > -2.5;
+        return d <= -2.5;
+      }
+    },
+    orden: {
+      etiqueta: 'Ordenar por',
+      tipo: 'orden',
+      opciones: (datos, seccion) => (SECCIONES[seccion].ordenes || [])
+        .map((v) => ({ valor: v, etiqueta: ORDENES[v].etiqueta })),
+      prueba: () => true
+    }
+  };
+
+  const ORDENES = {
+    nota_desc: { etiqueta: 'Tu nota (mayor primero)',
+      cmp: (a, b) => (b.nota == null ? -1 : b.nota) - (a.nota == null ? -1 : a.nota) || a.titulo.localeCompare(b.titulo, 'es') },
+    diferencia_desc: { etiqueta: 'Diferencia (mayor primero)',
+      cmp: (a, b) => (b.diferencia || 0) - (a.diferencia || 0) || a.titulo.localeCompare(b.titulo, 'es') },
+    diferencia_asc: { etiqueta: 'Diferencia (menor primero)',
+      cmp: (a, b) => (a.diferencia || 0) - (b.diferencia || 0) || a.titulo.localeCompare(b.titulo, 'es') },
+    titulo_asc: { etiqueta: 'Título (A–Z)',
+      cmp: (a, b) => a.titulo.localeCompare(b.titulo, 'es') },
+    imdb_desc: { etiqueta: 'IMDb (mayor primero)',
+      cmp: (a, b) => (b.imdb == null ? -1 : b.imdb) - (a.imdb == null ? -1 : a.imdb) || a.titulo.localeCompare(b.titulo, 'es') },
+    year_desc: { etiqueta: 'Año (más reciente)',
+      cmp: (a, b) => (b.year || 0) - (a.year || 0) || a.titulo.localeCompare(b.titulo, 'es') }
+  };
+
+  const SECCIONES = {
+    posters: {
+      tabla: null, base: (f) => f.nota != null, limite: 10,
+      facetas: ['tipo', 'genero', 'decada', 'nota', 'orden'],
+      ordenes: ['nota_desc', 'titulo_asc', 'year_desc'], ordenDefecto: 'nota_desc'
+    },
+    top: {
+      tabla: 'tabla-top', base: (f) => f.nota != null, limite: 60,
+      facetas: ['tipo', 'genero', 'decada', 'nota', 'imdb', 'orden'],
+      ordenes: ['nota_desc', 'imdb_desc', 'titulo_asc', 'year_desc'], ordenDefecto: 'nota_desc'
+    },
+    joyas: {
+      tabla: 'tabla-joyas',
+      base: (f) => f.diferencia != null && f.diferencia >= 1.5, limite: 30,
+      facetas: ['tipo', 'genero', 'decada', 'nota', 'imdb', 'diferencia', 'orden'],
+      ordenes: ['diferencia_desc', 'nota_desc', 'titulo_asc'], ordenDefecto: 'diferencia_desc'
+    },
+    decepciones: {
+      tabla: 'tabla-decepciones',
+      base: (f) => f.diferencia != null && f.diferencia <= -1.5, limite: 30,
+      facetas: ['tipo', 'genero', 'decada', 'nota', 'imdb', 'diferencia', 'orden'],
+      ordenes: ['diferencia_asc', 'nota_desc', 'titulo_asc'], ordenDefecto: 'diferencia_asc'
+    },
+    lista: {
+      tabla: 'tabla-todas', base: () => true, limite: 0,
+      facetas: ['tipo', 'genero', 'decada', 'estado', 'nota', 'imdb', 'calidad', 'orden'],
+      ordenes: ['titulo_asc', 'nota_desc', 'imdb_desc', 'year_desc'], ordenDefecto: 'titulo_asc'
+    },
+    seguimiento: {
+      tabla: 'tabla-seguimiento', base: (f) => f.nota == null, limite: 60,
+      facetas: ['tipo', 'genero', 'decada', 'imdb', 'calidad', 'orden'],
+      ordenes: ['imdb_desc', 'titulo_asc', 'year_desc'], ordenDefecto: 'imdb_desc'
+    }
+  };
+
+  const pill = (v) => {
+    const s = document.createElement('span');
+    s.className = 'pill';
+    s.textContent = texto(v);
+    return s;
+  };
+  const np = () => {
+    const s = document.createElement('span');
+    s.className = 'np';
+    s.title = 'No puntuado';
+    s.textContent = 'NP';
+    return s;
+  };
+  const tituloCelda = (f) => {
+    const span = document.createElement('span');
+    span.className = 'nw';
+    span.textContent = f.titulo;
+    const anio = document.createElement('span');
+    anio.style.color = 'var(--sub)';
+    anio.textContent = ' (' + (f.year || '?') + ')';
+    span.appendChild(anio);
+    return span;
+  };
+  const COLUMNAS = {
+    top: [
+      { etiqueta: 'Tu nota', valor: (f) => pill(f.nota) },
+      { etiqueta: 'Título', clase: 't', valor: tituloCelda },
+      { etiqueta: 'Tipo', valor: (f) => f.tipo || '-' },
+      { etiqueta: 'IMDb', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) }
+    ],
+    joyas: [
+      { etiqueta: 'Tú', valor: (f) => pill(f.nota) },
+      { etiqueta: 'Título', clase: 't', valor: tituloCelda },
+      { etiqueta: 'IMDb', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) },
+      { etiqueta: 'Diferencia', valor: (f) => (f.diferencia > 0 ? '+' : '') + texto(f.diferencia) }
+    ],
+    decepciones: [
+      { etiqueta: 'Tú', valor: (f) => pill(f.nota) },
+      { etiqueta: 'Título', clase: 't', valor: tituloCelda },
+      { etiqueta: 'IMDb', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) },
+      { etiqueta: 'Diferencia', valor: (f) => texto(f.diferencia) }
+    ],
+    lista: [
+      { etiqueta: 'Título', clase: 't', valor: (f) => f.titulo },
+      { etiqueta: 'Tipo', valor: (f) => f.tipo || '-' },
+      { etiqueta: 'Año', valor: (f) => (f.year == null ? '-' : texto(f.year)) },
+      { etiqueta: 'Géneros', valor: (f) => mostrarGeneros(f.generos) },
+      { etiqueta: 'IMDb', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) },
+      { etiqueta: 'Tu nota', valor: (f) => (f.nota == null ? np() : pill(f.nota)) }
+    ],
+    seguimiento: [
+      { etiqueta: 'Título', clase: 't', valor: tituloCelda },
+      { etiqueta: 'Tipo', valor: (f) => f.tipo || '-' },
+      { etiqueta: 'IMDb', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) }
+    ]
+  };
+  Object.keys(COLUMNAS).forEach((id) => { SECCIONES[id].columnas = COLUMNAS[id]; });
+
+  const estadoFiltros = {};
+  const paginadores = {};
+  Object.keys(SECCIONES).forEach((id) => {
+    estadoFiltros[id] = { facetas: {}, orden: SECCIONES[id].ordenDefecto, q: '' };
+  });
+
+  const opcionesFaceta = (clave, seccion) => {
+    const faceta = FACETAS[clave];
+    if (!faceta) return [];
+    return faceta.opciones(CATALOGO, seccion)
+      .filter((o) => !o.soloEn || o.soloEn.includes(seccion));
+  };
+
+  function filasDe(id) {
+    const conf = SECCIONES[id];
+    const est = estadoFiltros[id];
+    let filas = CATALOGO.filter(conf.base);
+    Object.keys(est.facetas).forEach((clave) => {
+      const valores = est.facetas[clave] || [];
+      const faceta = FACETAS[clave];
+      if (!valores.length || !faceta) return;
+      filas = filas.filter((f) => valores.some((v) => faceta.prueba(f, v)));
+    });
+    if (id === 'lista' && est.q) {
+      const t = est.q.toLowerCase();
+      filas = filas.filter((f) => buscaTexto(f).includes(t));
+    }
+    filas.sort((ORDENES[est.orden] || ORDENES[conf.ordenDefecto]).cmp);
+    return filas;
+  }
+
+  function filaDe(conf, f) {
+    const tr = document.createElement('tr');
+    tr.dataset.tt = f.tt;
+    conf.columnas.forEach((col) => {
+      const td = document.createElement('td');
+      if (col.clase) td.className = col.clase;
+      td.dataset.label = col.etiqueta;
+      const v = col.valor(f);
+      if (v instanceof Node) td.appendChild(v);
+      else td.textContent = v;
+      tr.appendChild(td);
+    });
+    return tr;
+  }
+
+  function montarPaginador(tabla, paso = PASO) {
     const wrap = document.createElement('div');
     wrap.className = 'more-wrap';
     const btn = document.createElement('button');
@@ -581,46 +854,322 @@ def generar(db_path: Path) -> str:
     btn.className = 'more-btn';
     const info = document.createElement('div');
     info.className = 'count';
-    info.setAttribute("aria-live", "polite");
-    const pintar = () => {
-      rows.forEach((tr, i) => { tr.style.display = i < visibles ? '' : 'none'; });
-      const restan = rows.length - visibles;
-      if (restan <= 0) { btn.hidden = true; info.textContent = 'Mostrando ' + rows.length + ' de ' + rows.length; }
-      else { btn.hidden = false; btn.textContent = 'Cargar 15 más (' + restan + ' restantes)'; info.textContent = 'Mostrando ' + visibles + ' de ' + rows.length; }
-    };
-    btn.addEventListener('click', () => { visibles += PASO; tbl.dataset.n = visibles; pintar(); });
-    tbl.after(info);
-    tbl.after(wrap);
+    info.setAttribute('aria-live', 'polite');
     wrap.appendChild(btn);
-    tbl.dataset.n = visibles;
-    pintar();
-  });
-  const q = document.getElementById('q');
-  const tblTodas = document.getElementById('tabla-todas');
-  if (q && tblTodas) q.addEventListener('input', () => {
-    const t = q.value.toLowerCase().trim();
-    const rows = Array.from(tblTodas.querySelectorAll('tbody tr'));
-    const section = tblTodas.closest('section');
-    const wrap = section ? section.querySelector('.more-wrap') : null;
-    const info = section ? section.querySelector('.count') : null;
-    if (!t) {
-      const n = parseInt(tblTodas.dataset.n || PASO, 10);
+    tabla.after(info);
+    tabla.after(wrap);
+    let visibles = paso;
+    const filas = () => Array.from(tabla.querySelectorAll('tbody tr'))
+      .filter((tr) => !tr.classList.contains('vacio'));
+    const pintar = () => {
+      const rows = filas();
+      if (!rows.length) {
+        btn.hidden = true;
+        info.textContent = 'Sin resultados con estos filtros.';
+        return;
+      }
+      const n = Math.min(visibles, rows.length);
       rows.forEach((tr, i) => { tr.style.display = i < n ? '' : 'none'; });
-      if (wrap) wrap.style.display = '';
+      info.textContent = 'Mostrando ' + n + ' de ' + rows.length;
+      const restan = rows.length - n;
+      btn.hidden = restan <= 0;
+      if (restan > 0) btn.textContent = 'Cargar ' + paso + ' más (' + restan + ' restantes)';
+    };
+    btn.addEventListener('click', () => { visibles += paso; pintar(); });
+    return {
+      reiniciar() { visibles = paso; pintar(); },
+      pintar
+    };
+  }
+
+  function renderPosters(id) {
+    const cont = document.querySelector('#seccion-posters .poster-grid');
+    if (!cont) return;
+    const conf = SECCIONES[id];
+    const filas = filasDe(id);
+    const visibles = conf.limite ? filas.slice(0, conf.limite) : filas;
+    cont.replaceChildren();
+    if (!visibles.length) {
+      const p = document.createElement('p');
+      p.className = 'empty';
+      p.textContent = 'Sin resultados con estos filtros.';
+      cont.appendChild(p);
+    } else {
+      visibles.forEach((f) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'poster-card' + (f.poster ? '' : ' no-poster');
+        b.dataset.tt = f.tt;
+        b.setAttribute('aria-label', 'Abrir ficha de ' + f.titulo);
+        if (f.poster) {
+          const img = document.createElement('img');
+          img.src = f.poster;
+          img.alt = 'Póster de ' + f.titulo;
+          img.loading = 'lazy';
+          b.appendChild(img);
+        } else {
+          const ini = document.createElement('span');
+          ini.className = 'poster-fallback';
+          ini.setAttribute('aria-hidden', 'true');
+          ini.textContent = iniciales(f.titulo);
+          b.appendChild(ini);
+        }
+        const nota = document.createElement('span');
+        nota.className = 'poster-rating';
+        nota.textContent = texto(f.nota);
+        const titulo = document.createElement('span');
+        titulo.className = 'poster-title';
+        titulo.textContent = f.titulo;
+        const anio = document.createElement('span');
+        anio.className = 'poster-year';
+        anio.textContent = f.year || '?';
+        b.append(nota, titulo, anio);
+        cont.appendChild(b);
+      });
+    }
+    const info = document.getElementById('count-posters');
+    if (info) info.textContent = 'Mostrando ' + visibles.length + ' de ' + filas.length;
+  }
+
+  function renderTabla(id) {
+    const conf = SECCIONES[id];
+    const tabla = document.getElementById(conf.tabla);
+    if (!tabla) return;
+    const tbody = tabla.querySelector('tbody');
+    if (!tbody) return;
+    const filas = filasDe(id);
+    const visibles = conf.limite ? filas.slice(0, conf.limite) : filas;
+    const frag = document.createDocumentFragment();
+    if (!visibles.length) {
+      const tr = document.createElement('tr');
+      tr.className = 'vacio';
+      const td = document.createElement('td');
+      td.colSpan = conf.columnas.length;
+      td.className = 'empty';
+      td.textContent = 'Sin resultados con estos filtros.';
+      tr.appendChild(td);
+      frag.appendChild(tr);
+    } else {
+      visibles.forEach((f) => frag.appendChild(filaDe(conf, f)));
+    }
+    tbody.replaceChildren(frag);
+    if (paginadores[id]) paginadores[id].reiniciar();
+  }
+
+  function renderSeccion(id) {
+    if (!SECCIONES[id]) return;
+    if (id === 'posters') renderPosters(id);
+    else renderTabla(id);
+    pintarChips(id);
+  }
+
+  function pintarChips(id) {
+    const cont = document.getElementById('chips-' + id);
+    const est = estadoFiltros[id];
+    if (!cont || !est) return;
+    cont.replaceChildren();
+    let n = 0;
+    Object.keys(est.facetas).forEach((clave) => {
+      const faceta = FACETAS[clave];
+      const valores = est.facetas[clave] || [];
+      if (!faceta || !valores.length || clave === 'orden') return;
+      const opciones = opcionesFaceta(clave, id);
+      valores.forEach((valor) => {
+        const op = opciones.find((o) => o.valor === valor);
+        if (!op) return;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip';
+        b.textContent = faceta.etiqueta + ': ' + op.etiqueta + ' ×';
+        b.setAttribute('aria-label', 'Quitar filtro ' + faceta.etiqueta + ': ' + op.etiqueta);
+        b.addEventListener('click', () => alternarFaceta(id, clave, valor, false));
+        cont.appendChild(b);
+        n += 1;
+      });
+    });
+    cont.hidden = n === 0;
+    const panel = document.getElementById('filtro-' + id);
+    if (panel && !panel.hidden) {
+      panel.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+        input.checked = (est.facetas[input.dataset.faceta] || []).includes(input.value);
+      });
+    }
+    const badge = document.querySelector('[data-filtro="' + id + '"] .filtro-badge');
+    if (badge) {
+      badge.textContent = texto(n);
+      badge.hidden = n === 0;
+    }
+  }
+
+  function alternarFaceta(id, clave, valor, activo) {
+    const est = estadoFiltros[id];
+    const actuales = (est.facetas[clave] || []).filter((v) => v !== valor);
+    if (activo) actuales.push(valor);
+    if (actuales.length) est.facetas[clave] = actuales;
+    else delete est.facetas[clave];
+    renderSeccion(id);
+    guardarSesion();
+  }
+
+  function limpiarFiltros(id) {
+    estadoFiltros[id] = { facetas: {}, orden: SECCIONES[id].ordenDefecto, q: '' };
+    if (id === 'lista') {
+      const q = document.getElementById('q');
+      if (q) q.value = '';
+    }
+    renderSeccion(id);
+    const panel = document.getElementById('filtro-' + id);
+    if (panel && !panel.hidden) construirPanel(id);
+    guardarSesion();
+  }
+
+  function construirPanel(id) {
+    const panel = document.getElementById('filtro-' + id);
+    if (!panel) return;
+    const est = estadoFiltros[id];
+    panel.replaceChildren();
+    const h = document.createElement('h3');
+    h.textContent = 'Filtros';
+    panel.appendChild(h);
+    SECCIONES[id].facetas.forEach((clave) => {
+      const faceta = FACETAS[clave];
+      if (!faceta) return;
+      const grupo = document.createElement('div');
+      grupo.className = 'filtro-grupo';
+      const etiqueta = document.createElement('strong');
+      etiqueta.textContent = faceta.etiqueta;
+      grupo.appendChild(etiqueta);
+      if (clave === 'orden') {
+        const sel = document.createElement('select');
+        sel.className = 'filtro-select';
+        sel.setAttribute('aria-label', faceta.etiqueta);
+        opcionesFaceta('orden', id).forEach((o) => {
+          const op = document.createElement('option');
+          op.value = o.valor;
+          op.textContent = o.etiqueta;
+          if (est.orden === o.valor) op.selected = true;
+          sel.appendChild(op);
+        });
+        sel.addEventListener('change', () => {
+          est.orden = sel.value;
+          renderSeccion(id);
+          guardarSesion();
+        });
+        grupo.appendChild(sel);
+      } else {
+        opcionesFaceta(clave, id).forEach((o) => {
+          const label = document.createElement('label');
+          label.className = 'filtro-opcion';
+          const input = document.createElement('input');
+          input.type = 'checkbox';
+          input.value = o.valor;
+          input.dataset.faceta = clave;
+          input.checked = (est.facetas[clave] || []).includes(o.valor);
+          input.addEventListener('change', () => {
+            alternarFaceta(id, clave, o.valor, input.checked);
+          });
+          const span = document.createElement('span');
+          span.textContent = o.etiqueta;
+          label.append(input, span);
+          grupo.appendChild(label);
+        });
+      }
+      panel.appendChild(grupo);
+    });
+    const acciones = document.createElement('div');
+    acciones.className = 'filtro-acciones';
+    const limpiar = document.createElement('button');
+    limpiar.type = 'button';
+    limpiar.className = 'filtro-limpiar';
+    limpiar.textContent = 'Limpiar';
+    limpiar.addEventListener('click', () => limpiarFiltros(id));
+    const cerrar = document.createElement('button');
+    cerrar.type = 'button';
+    cerrar.className = 'filtro-cerrar';
+    cerrar.textContent = 'Cerrar';
+    cerrar.addEventListener('click', () => cerrarPanelFiltro(id));
+    acciones.append(limpiar, cerrar);
+    panel.appendChild(acciones);
+  }
+
+  function cerrarPanelFiltro(id, devolverFoco = true) {
+    const panel = document.getElementById('filtro-' + id);
+    if (!panel || panel.hidden) return;
+    panel.hidden = true;
+    const btn = document.querySelector('[data-filtro="' + id + '"]');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      if (devolverFoco) btn.focus();
+    }
+  }
+
+  function cerrarPaneles() {
+    Object.keys(SECCIONES).forEach((id) => cerrarPanelFiltro(id, false));
+  }
+
+  function cerrarPanelesConFoco() {
+    const abierto = Object.keys(SECCIONES).find((id) => {
+      const panel = document.getElementById('filtro-' + id);
+      return panel && !panel.hidden;
+    });
+    if (abierto) cerrarPanelFiltro(abierto);
+  }
+
+  function abrirPanelFiltro(id) {
+    if (!SECCIONES[id]) return;
+    const panel = document.getElementById('filtro-' + id);
+    const btn = document.querySelector('[data-filtro="' + id + '"]');
+    if (!panel || !btn || btn.disabled) return;
+    if (!panel.hidden) {
+      cerrarPanelFiltro(id);
       return;
     }
-    let vistos = 0;
-    rows.forEach((tr) => {
-      const ok = (tr.dataset.r || '').includes(t);
-      tr.style.display = ok ? '' : 'none';
-      if (ok) vistos += 1;
-    });
-    if (wrap) wrap.style.display = 'none';
-    if (info) info.textContent = vistos + ' resultados para "' + q.value + '"';
-  });
-  // Buscador global + ficha overlay.
-  const FICHAS = JSON.parse(document.getElementById('catalogo-data').textContent || '{}');
-  const indice = JSON.parse(document.getElementById('indice-data').textContent || '[]');
+    cerrarPaneles();
+    construirPanel(id);
+    panel.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    const primero = panel.querySelector('input, select, button');
+    if (primero) primero.focus();
+  }
+
+  function guardarSesion() {
+    try {
+      sessionStorage.setItem(CLAVE, JSON.stringify(estadoFiltros));
+    } catch (err) {
+      /* Sin almacenamiento: los filtros viven solo en memoria. */
+    }
+  }
+
+  function cargarSesion() {
+    try {
+      const crudo = sessionStorage.getItem(CLAVE);
+      if (!crudo) return;
+      const datos = JSON.parse(crudo);
+      if (!datos || typeof datos !== 'object') return;
+      Object.keys(SECCIONES).forEach((id) => {
+        const guardado = datos[id];
+        if (!guardado || typeof guardado !== 'object') return;
+        const est = estadoFiltros[id];
+        if (guardado.orden && SECCIONES[id].ordenes.includes(guardado.orden)) {
+          est.orden = guardado.orden;
+        }
+        Object.keys(guardado.facetas || {}).forEach((clave) => {
+          if (!SECCIONES[id].facetas.includes(clave) || !FACETAS[clave]) return;
+          const valores = guardado.facetas[clave];
+          if (!Array.isArray(valores)) return;
+          const validos = opcionesFaceta(clave, id).map((o) => o.valor);
+          const ok = valores.filter((v) => validos.includes(v));
+          if (ok.length) est.facetas[clave] = ok;
+        });
+        if (id === 'lista' && typeof guardado.q === 'string') est.q = guardado.q;
+      });
+    } catch (err) {
+      Object.keys(SECCIONES).forEach((id) => {
+        estadoFiltros[id] = { facetas: {}, orden: SECCIONES[id].ordenDefecto, q: '' };
+      });
+    }
+  }
+
   const iniciales = (titulo) => (titulo || '').split(/ +/).filter(Boolean).slice(0, 2)
     .map((p) => p[0]).join('').toUpperCase() || '?';
   const bg = document.getElementById('buscador-global');
@@ -629,7 +1178,7 @@ def generar(db_path: Path) -> str:
   const contenido = document.getElementById('ficha-contenido');
   const cerrarBtn = document.getElementById('ficha-cerrar');
   const plantilla = document.getElementById('ficha-plantilla');
-  let sel = -1;
+  let seleccion = -1;
   let actual = [];
   let focoPrevio = null;
   const cerrarFicha = () => {
@@ -679,15 +1228,15 @@ def generar(db_path: Path) -> str:
       imdb.hidden = true;
     }
     const bloques = q('#ficha-bloques');
-    const pasa = (titulo, texto) => {
-      if (!texto) return;
+    const pasa = (titulo, textoBloque) => {
+      if (!textoBloque) return;
       const b = document.createElement('div');
       b.className = 'bloque';
-      const tt2 = document.createElement('b');
-      tt2.textContent = titulo;
-      b.appendChild(tt2);
+      const tt = document.createElement('b');
+      tt.textContent = titulo;
+      b.appendChild(tt);
       const p = document.createElement('div');
-      p.textContent = texto;
+      p.textContent = textoBloque;
       b.appendChild(p);
       bloques.appendChild(b);
     };
@@ -697,8 +1246,7 @@ def generar(db_path: Path) -> str:
     pasa('Géneros', (f.generos || []).join(', '));
     pasa('Países', (f.paises || []).join(', '));
     const sinopsis = q('#ficha-sinopsis-texto');
-    const textoSinopsis = f.sinopsis || 'Sin sinopsis disponible todavía.';
-    sinopsis.textContent = textoSinopsis;
+    sinopsis.textContent = f.sinopsis || 'Sin sinopsis disponible todavía.';
     const leerMas = q('#ficha-leer-mas');
     leerMas.hidden = true;
     requestAnimationFrame(() => {
@@ -719,12 +1267,6 @@ def generar(db_path: Path) -> str:
     cerrarBtn.focus();
   };
   window.abrirFicha = abrirFicha;
-  document.querySelectorAll('.poster-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      const tt = card.dataset.tt;
-      if (tt) abrirFicha(tt);
-    });
-  });
   if (cerrarBtn) cerrarBtn.addEventListener('click', cerrarFicha);
   overlay.addEventListener('click', (ev) => { if (ev.target === overlay) cerrarFicha(); });
   overlay.addEventListener('keydown', (ev) => {
@@ -742,15 +1284,24 @@ def generar(db_path: Path) -> str:
       first.focus();
     }
   });
-  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { cerrarFicha(); if (rg) { rg.hidden = true; if (bg) bg.setAttribute('aria-expanded', 'false'); } } });
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') {
+      cerrarPanelesConFoco();
+      cerrarFicha();
+      if (rg) { rg.hidden = true; if (bg) bg.setAttribute('aria-expanded', 'false'); }
+    }
+  });
+  document.addEventListener('click', (ev) => {
+    if (!ev.target.closest('.filtro-wrap')) cerrarPaneles();
+  });
   const pintarGlobal = () => {
-    rg.innerHTML = '';
-    sel = -1;
+    rg.replaceChildren();
+    seleccion = -1;
     if (!bg.value.trim()) { rg.hidden = true; bg.setAttribute('aria-expanded', 'false'); return; }
     const t = bg.value.toLowerCase().trim();
-    actual = indice.filter((x) => ((x.t || '') + ' ' + (x.o || '') + ' ' + (x.d || '') + ' ' + (x.a || '') + ' ' + (x.g || '')).toLowerCase().includes(t)).slice(0, 8);
+    actual = CATALOGO.filter((x) => buscaTexto(x).includes(t)).slice(0, 8);
     if (!actual.length) { rg.hidden = true; bg.setAttribute('aria-expanded', 'false'); return; }
-    actual.forEach((x, i) => {
+    actual.forEach((x) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.setAttribute('role', 'option');
@@ -765,14 +1316,20 @@ def generar(db_path: Path) -> str:
       const tx = document.createElement('span');
       const t1 = document.createElement('div');
       t1.className = 'rg-t';
-      t1.textContent = x.t;
+      t1.textContent = x.titulo;
       tx.appendChild(t1);
       const t2 = document.createElement('div');
       t2.className = 'rg-s';
-      t2.textContent = [x.y || '?', x.tipo || '', (x.nota != null ? 'Tu nota ' + x.nota : '')].filter(Boolean).join(' · ');
+      t2.textContent = [x.year || '?', x.tipo || '',
+        (x.nota != null ? 'Tu nota ' + x.nota : '')].filter(Boolean).join(' · ');
       tx.appendChild(t2);
       b.appendChild(tx);
-      b.addEventListener('click', () => { rg.hidden = true; bg.setAttribute('aria-expanded', 'false'); bg.focus(); abrirFicha(x.tt); });
+      b.addEventListener('click', () => {
+        rg.hidden = true;
+        bg.setAttribute('aria-expanded', 'false');
+        bg.focus();
+        abrirFicha(x.tt);
+      });
       rg.appendChild(b);
     });
     rg.hidden = false;
@@ -784,22 +1341,67 @@ def generar(db_path: Path) -> str:
       const btns = Array.from(rg.querySelectorAll('button'));
       if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
         ev.preventDefault();
-        sel = ev.key === 'ArrowDown' ? Math.min(sel + 1, btns.length - 1) : Math.max(sel - 1, 0);
-        btns.forEach((b, i) => b.setAttribute('aria-selected', i === sel ? 'true' : 'false'));
-        if (btns[sel]) btns[sel].scrollIntoView({ block: 'nearest' });
-      } else if (ev.key === 'Enter' && sel >= 0 && btns[sel]) {
+        seleccion = ev.key === 'ArrowDown'
+          ? Math.min(seleccion + 1, btns.length - 1)
+          : Math.max(seleccion - 1, 0);
+        btns.forEach((b, i) => b.setAttribute('aria-selected', i === seleccion ? 'true' : 'false'));
+        if (btns[seleccion]) btns[seleccion].scrollIntoView({ block: 'nearest' });
+      } else if (ev.key === 'Enter' && seleccion >= 0 && btns[seleccion]) {
         ev.preventDefault();
-        const tt = btns[sel].dataset.tt;
+        const tt = btns[seleccion].dataset.tt;
         rg.hidden = true;
         abrirFicha(tt);
       }
     });
-    document.addEventListener('click', (ev) => { if (!rg.hidden && !ev.target.closest('.buscador-global')) { rg.hidden = true; bg.setAttribute('aria-expanded', 'false'); } });
+    document.addEventListener('click', (ev) => {
+      if (!rg.hidden && !ev.target.closest('.buscador-global')) {
+        rg.hidden = true;
+        bg.setAttribute('aria-expanded', 'false');
+      }
+    });
   }
-  if (tblTodas) tblTodas.addEventListener('click', (ev) => {
-    const tr = ev.target.closest('tr[data-tt]');
-    if (tr && tr.dataset.tt) abrirFicha(tr.dataset.tt);
+  const qInput = document.getElementById('q');
+  let esperaBusqueda = null;
+  if (qInput) {
+    qInput.addEventListener('input', () => {
+      clearTimeout(esperaBusqueda);
+      esperaBusqueda = setTimeout(() => {
+        estadoFiltros.lista.q = qInput.value.trim();
+        renderSeccion('lista');
+        guardarSesion();
+      }, 120);
+    });
+  }
+  const gridPosters = document.querySelector('#seccion-posters .poster-grid');
+  if (gridPosters) gridPosters.addEventListener('click', (ev) => {
+    const card = ev.target.closest('.poster-card');
+    if (card && card.dataset.tt) abrirFicha(card.dataset.tt);
   });
+  document.querySelectorAll('[data-filtro]').forEach((btn) => {
+    btn.addEventListener('click', () => abrirPanelFiltro(btn.dataset.filtro));
+  });
+  cargarSesion();
+  if (qInput && estadoFiltros.lista.q) qInput.value = estadoFiltros.lista.q;
+  Object.keys(SECCIONES).forEach((id) => {
+    const conf = SECCIONES[id];
+    if (conf.tabla) {
+      const tabla = document.getElementById(conf.tabla);
+      if (tabla) paginadores[id] = montarPaginador(tabla);
+    }
+  });
+  document.querySelectorAll('table.paginada').forEach((tabla) => {
+    if (paginadores[tabla.dataset.seccion]) return;
+    montarPaginador(tabla).reiniciar();
+  });
+  document.querySelectorAll('table.paginada').forEach((tabla) => {
+    const id = tabla.dataset.seccion;
+    if (!SECCIONES[id] || SECCIONES[id].tabla !== tabla.id) return;
+    tabla.addEventListener('click', (ev) => {
+      const tr = ev.target.closest('tr[data-tt]');
+      if (tr && tr.dataset.tt) abrirFicha(tr.dataset.tt);
+    });
+  });
+  Object.keys(SECCIONES).forEach((id) => renderSeccion(id));
 })();
 </script>"""
 
@@ -858,7 +1460,6 @@ def generar(db_path: Path) -> str:
 </template>
 <footer>Generado desde tu base local · auto-regenerable con scripts/auto_vista.py</footer>
 <script type="application/json" id="catalogo-data">{catalogo_json}</script>
-<script type="application/json" id="indice-data">{indice_json}</script>
 </div>{js}</body></html>"""
 
 

@@ -129,10 +129,25 @@ class TestVistaHtml(unittest.TestCase):
 
     def test_marcadores_de_accesibilidad(self):
         pagina = self._generar_con_fixture()
-        for marcador in ('info.setAttribute("aria-live", "polite")',
+        for marcador in (                         "info.setAttribute('aria-live', 'polite')",
                          'aria-haspopup="listbox"', 'aria-autocomplete="list"',
                          'role="dialog"', 'aria-modal="true"'):
             self.assertIn(marcador, pagina)
+
+    def test_motor_de_filtros_y_paginador(self):
+        pagina = self._generar_con_fixture()
+        self.assertNotIn('id="indice-data"', pagina)
+        for marcador in ("montarPaginador", "sessionStorage",
+                         "db-peliculas:filtros:v1", "renderSeccion",
+                         "aria-live", "alternarFaceta"):
+            self.assertIn(marcador, pagina)
+        self.assertIn("Sin resultados con estos filtros.", pagina)
+
+    def test_estado_vacio_y_sesion_tolerante_a_fallos(self):
+        pagina = self._generar_con_fixture()
+        self.assertGreaterEqual(pagina.count("Sin resultados con estos filtros."), 2)
+        self.assertIn("catch (err)", pagina)
+        self.assertIn("sessionStorage.getItem(CLAVE)", pagina)
 
     def test_lista_completa_con_todos_los_titulos(self):
         tmp = tempfile.TemporaryDirectory()
@@ -152,8 +167,7 @@ class TestVistaHtml(unittest.TestCase):
             self.assertIn(seccion, pagina)
         # Buscador global + ficha overlay.
         for marcador in ('id="buscador-global"', 'id="resultados-global"',
-                          'id="overlay"', 'id="indice-data"',
-                          'id="ficha-plantilla"', 'abrirFicha'):
+                          'id="overlay"', 'id="ficha-plantilla"', 'abrirFicha'):
             self.assertIn(marcador, pagina)
         tmp.cleanup()
 
