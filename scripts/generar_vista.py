@@ -533,7 +533,7 @@ def generar(db_path: Path) -> str:
       t2.textContent = [x.y || '?', x.tipo || '', (x.nota != null ? 'Tu nota ' + x.nota : '')].filter(Boolean).join(' · ');
       tx.appendChild(t2);
       b.appendChild(tx);
-      b.addEventListener('click', () => { rg.hidden = true; bg.setAttribute('aria-expanded', 'false'); abrirFicha(x.tt); });
+      b.addEventListener('click', () => { rg.hidden = true; bg.setAttribute('aria-expanded', 'false'); bg.focus(); abrirFicha(x.tt); });
       rg.appendChild(b);
     });
     rg.hidden = false;
