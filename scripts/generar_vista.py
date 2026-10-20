@@ -310,12 +310,23 @@ def cabecera_seccion(id_seccion: str, titulo: str, hint: str,
         f'<div class="chips" id="chips-{id_html}" aria-live="polite" hidden></div>')
 
 
-def tarjeta_kpi(clave: str, valor: str, etiqueta: str) -> str:
-    """KPI con icono de filtro; el preset se aplica en Lista completa."""
+def tarjeta_kpi(clave: str, valor: str, etiqueta: str,
+                filtrable: bool = True) -> str:
+    """KPI con botón de preset; el preset se aplica en Lista completa.
+
+    Los KPIs que son un promedio puro (tu nota media, exigencia) no tienen
+    equivalencia en una faceta: su botón sale deshabilitado.
+    """
+    id_html = html.escape(clave, quote=True)
+    etiqueta_html = html.escape(etiqueta)
+    deshabilitado = "" if filtrable else " disabled"
     return (
-        f'<div class="kpi" data-kpi="{html.escape(clave, quote=True)}">'
-        f'<div class="n">{valor}</div><div class="l">{html.escape(etiqueta)}</div>'
-        f'{boton_filtro("kpi-" + clave, etiqueta)}</div>')
+        f'<div class="kpi" data-kpi="{id_html}">'
+        f'<div class="n">{valor}</div><div class="l">{etiqueta_html}</div>'
+        '<div class="filtro-wrap">'
+        f'<button type="button" class="filtro-btn" data-kpi-filtro="{id_html}" '
+        f'aria-label="Filtrar {etiqueta_html}"{deshabilitado}>'
+        f'{ICONO_FILTRO}</button></div></div>')
 
 
 def _iniciales(titulo: str) -> str:
@@ -436,11 +447,12 @@ def generar(db_path: Path) -> str:
             + tarjeta_kpi("total", str(total), "Títulos")
             + tarjeta_kpi("valoradas", str(valoradas), "Valoradas por ti")
             + tarjeta_kpi("pendientes", str(pendientes), "En seguimiento")
-            + tarjeta_kpi("media", str(media or "-"), "Tu nota media")
+            + tarjeta_kpi("media", str(media or "-"), "Tu nota media",
+                          filtrable=False)
             + tarjeta_kpi("faltan", str(faltan), "Sin enriquecer")
             + tarjeta_kpi("exigencia",
                           str(exigencia) if exigencia is not None else "-",
-                          "Exigencia (tú − IMDb)")
+                          "Exigencia (tú − IMDb)", filtrable=False)
             + tarjeta_kpi("enriquecidos", f"{enr_hechos}/{enr_total}",
                           "Enriquecidos")
             + '</div>')
@@ -784,6 +796,17 @@ def generar(db_path: Path) -> str:
       facetas: ['tipo', 'genero', 'decada', 'imdb', 'calidad', 'orden'],
       ordenes: ['imdb_desc', 'titulo_asc', 'year_desc'], ordenDefecto: 'imdb_desc'
     }
+  };
+
+  /* Presets de los KPIs: se aplican sobre la seccion 'lista'.
+     Solo hay preset para los KPIs que equivalen a un conjunto de titulos.
+     'media' y 'exigencia' son promedios: su boton queda deshabilitado. */
+  const PRESET_KPI = {
+    total: { facetas: {} },
+    valoradas: { facetas: { estado: ['rated'] } },
+    pendientes: { facetas: { estado: ['watchlist'] } },
+    faltan: { facetas: { calidad: ['sin_sinopsis', 'sin_reparto', 'sin_poster'] } },
+    enriquecidos: { facetas: { calidad: ['completa'] } }
   };
 
   const pill = (v) => {
@@ -1159,6 +1182,25 @@ def generar(db_path: Path) -> str:
     if (abierto) cerrarPanelFiltro(abierto);
   }
 
+  function aplicarPresetKPI(clave) {
+    const preset = PRESET_KPI[clave];
+    if (!preset) return;
+    const est = estadoFiltros.lista;
+    est.facetas = JSON.parse(JSON.stringify(preset.facetas || {}));
+    est.q = '';
+    const q = document.getElementById('q');
+    if (q) q.value = '';
+    renderSeccion('lista');
+    guardarSesion();
+    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const sec = document.getElementById('lista');
+    if (sec) {
+      sec.scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' });
+      const titulo = document.getElementById('titulo-lista');
+      if (titulo) titulo.focus();
+    }
+  }
+
   function abrirPanelFiltro(id) {
     if (!SECCIONES[id]) return;
     const panel = document.getElementById('filtro-' + id);
@@ -1423,6 +1465,9 @@ def generar(db_path: Path) -> str:
   });
   document.querySelectorAll('[data-filtro]').forEach((btn) => {
     btn.addEventListener('click', () => abrirPanelFiltro(btn.dataset.filtro));
+  });
+  document.querySelectorAll('[data-kpi-filtro]').forEach((btn) => {
+    btn.addEventListener('click', () => aplicarPresetKPI(btn.dataset.kpiFiltro));
   });
   cargarSesion();
   if (qInput && estadoFiltros.lista.q) qInput.value = estadoFiltros.lista.q;

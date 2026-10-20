@@ -181,6 +181,19 @@ class TestVistaHtml(unittest.TestCase):
         # El fixture no trae sinopsis, póster ni reparto: 0 de 3 enriquecidos.
         self.assertIn('<div class="n">0/3</div>', pagina)
 
+    def test_boton_kpi_aplica_preset_en_lista(self):
+        pagina = self._generar_con_fixture()
+        for clave in ("total", "valoradas", "pendientes", "faltan",
+                      "enriquecidos"):
+            self.assertIn(f'data-kpi-filtro="{clave}"', pagina)
+        self.assertIn("PRESET_KPI", pagina)
+        self.assertIn("aplicarPresetKPI", pagina)
+        # Tu nota media y Exigencia son promedios: sin preset, botón off.
+        self.assertIn('data-kpi-filtro="media" aria-label="Filtrar Tu nota media" disabled',
+                       pagina)
+        self.assertIn('data-kpi-filtro="exigencia"', pagina)
+        self.assertIn("Exigencia (tú − IMDb)", pagina)
+
     def test_seccion_notas_por_decada(self):
         pagina = self._generar_con_fixture()
         for marcador in ('id="seccion-decadas"', 'id="tabla-decadas"',
