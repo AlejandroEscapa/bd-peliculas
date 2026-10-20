@@ -207,6 +207,28 @@ def generar(db_path: Path) -> str:
         "AND (t.imdb_rating - u.my_rating) >= 1.5 "
         "ORDER BY dif DESC LIMIT 30").fetchall()
     faltan = c.execute("SELECT COUNT(*) n FROM v_sin_enriquecer").fetchone()["n"]
+    exigencia = c.execute(
+        "SELECT ROUND(AVG(u.my_rating - t.imdb_rating), 2) e "
+        "FROM titles t "
+        "JOIN user_state u ON u.tt = t.tt "
+        "WHERE u.my_rating IS NOT NULL "
+        "AND t.imdb_rating IS NOT NULL"
+    ).fetchone()["e"]
+    enr_total = c.execute("SELECT COUNT(*) n FROM titles").fetchone()["n"]
+    enr_hechos = c.execute(
+        "SELECT COUNT(*) n FROM titles t "
+        "WHERE t.synopsis IS NOT NULL "
+        "AND t.poster_url IS NOT NULL "
+        "AND EXISTS (SELECT 1 FROM title_cast c WHERE c.tt = t.tt)"
+    ).fetchone()["n"]
+    decadas = c.execute(
+        "SELECT (t.year / 10) * 10 AS decada, COUNT(*) AS titulos, "
+        "ROUND(AVG(t.imdb_rating), 2) AS media "
+        "FROM titles t "
+        "WHERE t.year IS NOT NULL "
+        "GROUP BY decada "
+        "ORDER BY decada"
+    ).fetchall()
     todas = c.execute(
         """SELECT t.tt, t.title_es, t.original_title, t.title_type, t.year,
                   t.imdb_rating, u.my_rating,
@@ -240,6 +262,8 @@ def generar(db_path: Path) -> str:
             f'<div class="kpi"><div class="n">{pendientes}</div><div class="l">En seguimiento</div></div>'
             f'<div class="kpi"><div class="n">{media or "-"}</div><div class="l">Tu nota media</div></div>'
             f'<div class="kpi"><div class="n">{faltan}</div><div class="l">Sin enriquecer</div></div>'
+            f'<div class="kpi"><div class="n">{exigencia or "-"}</div><div class="l">Exigencia (tú − IMDb)</div></div>'
+            f'<div class="kpi"><div class="n">{enr_hechos}/{enr_total}</div><div class="l">Enriquecidos</div></div>'
             f'</div>')
 
     posters = "".join(_tarjeta_poster(r) for r in top_posters) or (
@@ -347,6 +371,16 @@ def generar(db_path: Path) -> str:
                     e(r["title_type"] or ""), str(r["imdb_rating"] or "-")],
                    cls_first="t")
         for r in pend)
+
+    max_d = max([r["titulos"] for r in decadas] or [1])
+    dec_rows = "".join(
+        fila_tabla([
+            f'{int(r["decada"])}s',
+            str(r["titulos"]),
+            f'<div class="bar"><i style="width:{100 * r["titulos"] // max_d}%"></i></div>',
+            str(r["media"] or "-")
+        ])
+        for r in decadas)
 
     js = """<script>
 (function () {
@@ -588,7 +622,9 @@ def generar(db_path: Path) -> str:
 </div>
 <section><h2>Actores de confianza</h2><div class="hint">Tu nota media por actor (mínimo 2 títulos). 15 visibles, carga 15 más.</div>
 <table class="paginada"><thead><tr><th>Actor</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{actor_rows}</tbody></table></section>
-<section id="lista"><h2>Lista completa</h2><div class="hint">Los {ntotal} títulos. Filtra sin recargar. 15 visibles, carga 15 más.</div>
+    <section><h2>Notas por década</h2><div class="hint">Títulos y nota media IMDb por década.</div>
+<table class="paginada"><thead><tr><th>Década</th><th>Títulos</th><th></th><th>Media IMDb</th></tr></thead><tbody>{dec_rows}</tbody></table></section>
+    <section id="lista"><h2>Lista completa</h2><div class="hint">Los {ntotal} títulos. Filtra sin recargar. 15 visibles, carga 15 más.</div>
 <input class="search" id="q" type="search" placeholder="Filtra por título o género…" aria-label="Filtrar lista completa">
 <table class="paginada" id="tabla-todas"><thead><tr><th>Título</th><th>Tipo</th><th>Año</th><th>Géneros</th><th>IMDb</th><th>Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
 <section><h2>En seguimiento</h2><div class="hint">Sin tu nota todavía. 15 visibles, carga 15 más.</div>

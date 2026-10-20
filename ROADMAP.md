@@ -1,7 +1,7 @@
 # Roadmap — Catálogo personal (db-peliculas)
 
-Estado a 2026-10-18 (tras lote 137, fallos 0): 207 títulos, 1032 huecos. Sinopsis 157/207, pósters 156, cast 470 filas. Restan ~50 sin resolver por TMDB-find + fase 2 (fecha ES, dinero, serie_info).
-Panel simple en `preview/dashboard.html`: buscador + Joyas/Decepciones + Actores de confianza,
+Estado a 2026-10-19 (tras lote 137, fallos 0): 207 títulos, 1032 huecos. Sinopsis 157/207, pósters 156, cast 470 filas. Restan ~50 sin resolver por TMDB-find + fase 2 (fecha ES, dinero, serie_info).
+Panel simple en `preview/dashboard.html`: buscador + Joyas/Decepciones + Actores de confianza + KPIs extra (Exigencia y Enriquecidos X/207) + Notas por década,
 paginación 15+15. Watcher `scripts/auto_vista.py` verificado. Suite 35/35 OK.
 
 ## Pendiente de ejecutar (tú, en terminal nueva con tus vars)
@@ -21,19 +21,18 @@ paginación 15+15. Watcher `scripts/auto_vista.py` verificado. Suite 35/35 OK.
 
 ## Ideas de interfaz (una por una, como pediste)
 
-Hechas: buscador Lista completa, Joyas/Decepciones ±1.5, Actores de confianza.
+Hechas: buscador Lista completa, Joyas/Decepciones ±1.5, Actores de confianza, KPIs extra (Exigencia + Enriquecidos X/207), Notas por década (barras CSS).
 Descartadas por ahora, a debatir si las quieres:
 
 - [ ] Últimas valoradas + Maratón corto (<110 min, 7+ IMDb).
-- [ ] Distribución de notas + Por década (barras CSS).
-- [ ] KPIs extra: Exigencia (tú − IMDb) y Enriquecidos X/207.
 - [ ] Ruleta «Qué ver hoy» (3 pendientes 7.5+, determinista por día).
 - [ ] Mapa de países (con `title_countries`, barras CSS).
 
 ## Despliegue web
 
-- Sin MCP de Vercel en este entorno: el despliegue se hace desde tu terminal.
-- Opción A (estático, la de este panel): `preview/dashboard.html` no tiene dependencias; súbelo como estático (Vercel, GitHub Pages, Netlify) o sírvelo en local.
+- Estado: desplegado en Vercel y GitHub (`https://github.com/AlejandroEscapa/bd-peliculas`).
+- `vercel.json` reescribe `/` → `/preview/dashboard.html`.
+- `preview/dashboard.html` no tiene dependencias; se sirve como estático (Vercel) o en local.
 - Opción B (gestionado Cloudflare): herramientas `sites_*` disponibles si quieres preview/producción con D1/R2 y auth; este proyecto hoy es SQLite local + HTML estático, así que habría que adaptarlo antes.
 
 ## Claves (fijadas por ti con `setx`, fuera del repo)
