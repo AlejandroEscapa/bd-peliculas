@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.db import DEFAULT_DB_PATH
+from src.motor import recomendar
 
 CSS = """
 :root { --bg: #f5f5f7; --card: #ffffff; --ink: #1d1d1f; --sub: #6e6e73;
@@ -125,6 +126,10 @@ min-height: 44px; }
 .saga-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .saga-titulo { font-weight: 600; }
 .saga-meta { color: var(--sub); font-size: 12px; white-space: nowrap; }
+.encaje { display: flex; align-items: center; gap: 8px; }
+.encaje .bar { flex: 1 1 auto; min-width: 36px; }
+.encaje .n { color: var(--sub); font-size: 12px; font-variant-numeric: tabular-nums;
+white-space: nowrap; }
 tr[data-tt] { cursor: pointer; }
 footer { color: var(--sub); font-size: 12px; text-align: center; margin-top: 26px; }
 .poster-section { padding: 16px; }
@@ -265,6 +270,7 @@ ETIQUETAS_TABLA = {
     "directores": ["Director", "Títulos", "Media"],
     "actores": ["Actor", "Títulos", "Media"],
     "decadas": ["Década", "Títulos", "Distribución", "Media IMDb"],
+    "para-ti": ["Título", "Año", "IMDb", "Encaje", "Por qué"],
     "lista": ["Título", "Tipo", "Año", "Géneros", "IMDb", "Tu nota"],
     "seguimiento": ["Título", "Tipo", "IMDb"],
 }
@@ -459,6 +465,8 @@ def generar(db_path: Path) -> str:
            LEFT JOIN user_state u ON u.tt = c.tt
            WHERE c.collection_id IS NOT NULL
            ORDER BY c.collection_id, t.year, t.tt""").fetchall()
+    # El motor calcula la cola de pendientes recomendada (con su porqué).
+    recomendaciones = recomendar(c)
     c.close()
 
     e = html.escape
@@ -571,6 +579,32 @@ def generar(db_path: Path) -> str:
         todas_tr.append(fila)
     all_rows = "".join(todas_tr)
     ntotal = len(todas)
+    # Cola recomendada: pendientes ordenados por encaje, con su porqué.
+    para_ti_rows = "".join(
+        fila_tabla([
+            e(r["titulo"]),
+            str(r["year"] or "-"),
+            str(r["imdb"] if r["imdb"] is not None else "-"),
+            (f'<div class="encaje"><div class="bar">'
+             f'<i style="width:{r["encaje"]}%"></i></div>'
+             f'<span class="n">{r["encaje"]}%</span></div>'),
+            e(" · ".join(r["razones"])),
+        ], cls_first="t", etiquetas=ETIQUETAS_TABLA["para-ti"]).replace(
+            "<tr>", f'<tr data-tt="{e(r["tt"])}">', 1)
+        for r in recomendaciones)
+    para_ti_head = cabecera_seccion(
+        "para-ti", "Para ti",
+        "Tus pendientes ordenados por lo que encaja contigo, y por qué.",
+        disabled=True)
+    para_ti_html = ""
+    if para_ti_rows:
+        para_ti_html = (
+            '<section id="seccion-para-ti" aria-labelledby="titulo-para-ti">'
+            f'{para_ti_head}'
+            '<table class="paginada tabla-cards" id="tabla-para-ti" '
+            'data-seccion="para-ti" data-abre-ficha>'
+            '<thead><tr><th>Título</th><th>Año</th><th>IMDb</th><th>Encaje</th>'
+            f'<th>Por qué</th></tr></thead><tbody>{para_ti_rows}</tbody></table></section>')
     cast_por_tt: dict[str, list[dict]] = {}
     for r in cast_rows:
         cast_por_tt.setdefault(r["tt"], []).append(
@@ -1554,7 +1588,9 @@ def generar(db_path: Path) -> str:
   });
   document.querySelectorAll('table.paginada').forEach((tabla) => {
     const id = tabla.dataset.seccion;
-    if (!SECCIONES[id] || SECCIONES[id].tabla !== tabla.id) return;
+    const conMotor = SECCIONES[id] && SECCIONES[id].tabla === tabla.id;
+    const estatica = tabla.hasAttribute('data-abre-ficha');
+    if (!conMotor && !estatica) return;
     tabla.addEventListener('click', (ev) => {
       const tr = ev.target.closest('tr[data-tt]');
       if (tr && tr.dataset.tt) abrirFicha(tr.dataset.tt);
@@ -1572,6 +1608,7 @@ def generar(db_path: Path) -> str:
 <div class="resultados-global" id="resultados-global" role="listbox" hidden></div></div></div></header>
 {kpis}
 {posters_html}
+{para_ti_html}
 <section id="seccion-top" aria-labelledby="titulo-top">{top_head}
 <table class="paginada tabla-cards" id="tabla-top" data-seccion="top"><thead><tr><th>Tu nota</th><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
 <div class="grid2">

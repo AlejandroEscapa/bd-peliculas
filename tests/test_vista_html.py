@@ -197,6 +197,47 @@ class TestVistaHtml(unittest.TestCase):
         conn.close()
         return generar(db_path)
 
+    def _generar_con_motor(self):
+        """Página con el catálogo del motor (valoradas + pendientes con señales)."""
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        db_path = Path(tmp.name) / "test.db"
+        import_csv(ROOT / "tests" / "fixtures" / "motor.csv", db_path)
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            "UPDATE titles SET synopsis = ? WHERE tt = 'tt9000020'",
+            ("Una nave y su estación sobreviven en el espacio cuando el motor falla.",))
+        conn.execute(
+            "UPDATE titles SET synopsis = ? WHERE tt = 'tt9000019'",
+            ("Una cripta de sal esconde un misterio de terror bajo la iglesia.",))
+        conn.execute(
+            "INSERT OR REPLACE INTO title_collections "
+            "(tt, collection_id, collection_name, source) VALUES "
+            "('tt9000020', 2344, 'Saga Orbital', 'test')")
+        conn.execute(
+            "INSERT OR REPLACE INTO title_collections "
+            "(tt, collection_id, collection_name, source) VALUES "
+            "('tt9000014', 2344, 'Saga Orbital', 'test')")
+        conn.commit()
+        conn.close()
+        return generar(db_path)
+
+    def test_seccion_para_ti_con_motivos(self):
+        pagina = self._generar_con_motor()
+        self.assertIn('id="seccion-para-ti"', pagina)
+        self.assertIn('id="tabla-para-ti"', pagina)
+        self.assertIn("Por qué", pagina)
+        # Cada fila lleva su motivo y abre la ficha.
+        self.assertIn("data-tt=", pagina)
+        self.assertIn("Comparte saga con", pagina)
+        self.assertIn("te sale alto", pagina)
+        self.assertIn("data-abre-ficha", pagina)
+
+    def test_seccion_para_ti_no_aparece_sin_pendientes_justificables(self):
+        """Sin señales no hay sección: mejor vacío que ruido."""
+        pagina = self._generar_con_fixture()
+        self.assertNotIn('id="seccion-para-ti"', pagina)
+
     def test_coleccion_en_el_catalogo_json(self):
         pagina = self._generar_con_colecciones("tt0111161", "tt0068646")
         self.assertIn('"coleccion"', pagina)

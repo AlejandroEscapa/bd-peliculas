@@ -1,9 +1,9 @@
 # Roadmap — Catálogo personal (db-peliculas)
 
 Estado a 2026-10-20 (tras lote 137, fallos 0): 207 títulos, 1032 huecos. Sinopsis 157/207, pósters 156, cast 470 filas. Restan ~50 sin resolver por TMDB-find + fase 2 (fecha ES, dinero, serie_info).
-Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, ficha overlay con sinopsis al final, strip de pósters, motor de filtros por sección (facetas + orden) y paginación reactiva, Joyas/Decepciones + Géneros/Directores/Actores, KPIs extra (Exigencia y Enriquecidos X/207) y Notas por década.
+Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, ficha overlay con sinopsis al final, strip de pósters, motor de filtros por sección (facetas + orden) y paginación reactiva, Joyas/Decepciones + Géneros/Directores/Actores, KPIs extra (Exigencia y Enriquecidos X/207), Notas por década y "Para ti" (pendientes ordenados por encaje, con su porqué).
 Tuberías conectadas (2026-10-20): colecciones de TMDB (`belongs_to_collection`, 0 peticiones extra) en `title_collections`, con relaciones saga derivadas en `title_relations`; `schema_version` ya se registra al aplicar el esquema. La ficha muestra el bloque "Colección" con las partes de tu catálogo, por año y con tu nota.
-Watcher `scripts/auto_vista.py` verificado. Suite 69/69 OK.
+Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
 
 ## PENDIENTES AL LLEGAR A CASA (2026-10-20)
 
@@ -184,12 +184,13 @@ para el spike y la beta.
 ## Recomendadas beta (aparcada a tu orden)
 
 - Motor propuesto: híbrido (afinidad local por género/director/cast + similitud textual TF-IDF sobre sinopsis). Sin filtrado colaborativo: con un solo usuario no hay señal de otros que aprender.
-- **Ya está el combustible**: `title_relations` se rellena sola desde las colecciones de TMDB (0 peticiones extra) y `title_collections` ya se persiste. Falta el motor (`src/motor.py`, cálculo en Python en el build) y la capa de similitud.
+- **Hecho (2026-10-20): `src/motor.py`** calcula la cola de pendientes con su porqué (afinidad, antiperfil, saga, similitud) y el panel la enseña en la sección "Para ti". Determinista, sin red y sin dependencias. CLI: `python scripts/recomendar.py`.
+- **Ya está el combustible**: `title_relations` se rellena sola desde las colecciones de TMDB (0 peticiones extra) y `title_collections` ya se persiste.
 - Especificación completa y orden de ataque: [`docs/superpowers/plans/2026-10-20-motor-y-profesionalizacion.md`](docs/superpowers/plans/2026-10-20-motor-y-profesionalizacion.md).
 
 ## Ideas de interfaz (una por una, como pediste)
 
-Hechas: buscador Lista completa, Joyas/Decepciones ±1.5, Actores de confianza, buscador global + ficha overlay con sinopsis, strip de pósters, filtros por sección y orden, layout responsive, KPIs extra (Exigencia + Enriquecidos X/207), Notas por década (barras CSS), bloque "Colección" en la ficha con las partes de tu saga.
+Hechas: buscador Lista completa, Joyas/Decepciones ±1.5, Actores de confianza, buscador global + ficha overlay con sinopsis, strip de pósters, filtros por sección y orden, layout responsive, KPIs extra (Exigencia + Enriquecidos X/207), Notas por década (barras CSS), bloque "Colección" en la ficha con las partes de tu saga, sección "Para ti" (pendientes ordenados por encaje, cada uno con su porqué).
 Descartadas por ahora, a debat si las quieres:
 
 - [ ] Últimas valoradas + Maratón corto (<110 min, 7+ IMDb).

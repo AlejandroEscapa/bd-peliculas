@@ -18,6 +18,7 @@ Importas tu export de IMDb una vez y el catálogo se queda con tus notas. A part
 - **El enriquecido va por huecos.** `huecos.py` calcula qué falta y el scraper pide solo eso a TMDB (es-ES, fallback en-US) y OMDb. Un título roto no aborta el lote.
 - **El panel es un fichero estático.** `generar_vista.py` convierte la base en un dashboard HTML sin framework, sin build y sin peticiones al servidor. La paginación es 15 + 15 con JavaScript puro.
 - **Las sagas salen gratis.** La colección de cada título viene en la misma respuesta de TMDB que ya se pedía (`belongs_to_collection`): cero peticiones extra. De ahí se derivan las relaciones de saga y la ficha muestra las partes que tienes, por año y con tu nota.
+- **Las recomendaciones se explican.** `src/motor.py` ordena tus pendientes según lo que encaja contigo (afinidad por género, director, actor, década y país; antiperfil; saga; similitud textual sobre las sinopsis) y **cada uno lleva su porqué**. Sin filtrado colaborativo: con un solo usuario no hay señal de otros que aprender.
 
 El resultado es un catálogo que puedes abrir en local, versionar como snapshot y desplegar en cualquier hosting estático.
 
@@ -45,7 +46,7 @@ scripts/actualizar_peliculas.py ──▶ src/sync.py ──▶ SQLite
 
 | Capa | Tablas | Regla |
 |---|---|---|
-| Título canónico | `titles`, `title_genres`, `title_credits`, `title_cast`, `title_countries`, `release_dates`, `series_info`, `title_relations` | Hechos del título; la web solo rellena huecos |
+| Título canónico | `titles`, `title_genres`, `title_credits`, `title_cast`, `title_countries`, `release_dates`, `series_info`, `title_relations`, `title_collections` | Hechos del título; la web solo rellena huecos |
 | Capa personal | `user_state` | `my_rating`, `watch_status`, notas y fechas del CSV |
 | Auditoría | `sync_runs`, `sync_diffs`, `import_quarantine` | Cada importación deja rastro; un `tt` inválido va a cuarentena |
 
@@ -86,6 +87,7 @@ En Linux o macOS, cambia `set` por `export` y `start` por `open`. Sin `OMDB_API_
 | `python scripts/actualizar_peliculas.py <csv>` | Importa un delta y registra diffs y cuarentena |
 | `python scripts/scrapear_peliculas.py --proveedor ... --limite N --delay S` | Rellena huecos con pausa entre peticiones |
 | `python scripts/derivar_relaciones.py` | Deduce relaciones de saga desde las colecciones |
+| `python scripts/recomendar.py` | Ordena tus pendientes por encaje y explica el porqué |
 | `python scripts/generar_vista.py` | Regenera `preview/dashboard.html` |
 | `python scripts/auto_vista.py --una-vez` | Regenera el panel una vez; sin `--una-vez`, vigila la BD |
 | `python scripts/backup.py` | Vuelca la base a SQL + manifiesto JSON |
