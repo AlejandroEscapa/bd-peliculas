@@ -1192,10 +1192,11 @@ def generar(db_path: Path) -> str:
     if (q) q.value = '';
     renderSeccion('lista');
     guardarSesion();
-    const suave = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduce = typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const sec = document.getElementById('lista');
     if (sec) {
-      sec.scrollIntoView({ behavior: suave ? 'smooth' : 'auto', block: 'start' });
+      sec.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
       const titulo = document.getElementById('titulo-lista');
       if (titulo) titulo.focus();
     }
