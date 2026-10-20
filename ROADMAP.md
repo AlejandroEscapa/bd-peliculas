@@ -7,7 +7,10 @@ Watcher `scripts/auto_vista.py` verificado. Suite 69/69 OK.
 
 ## PENDIENTES AL LLEGAR A CASA (2026-10-20)
 
-> Estado al dejar el PC: `main` = `dc16817`, **14 commits por delante de
+> **Handoff completo** (guion, verificaciones, mapa del código, decisiones
+> tomadas y trampas conocidas): [`docs/superpowers/plans/2026-10-20-handoff.md`](docs/superpowers/plans/2026-10-20-handoff.md).
+
+> Estado al dejar el PC: `main` = `5a5aca8`, **15 commits por delante de
 > `origin/main` y sin push** (a propósito: el snapshot no se puede regenerar
 > sin tu base). Suite 69/69 en verde. La copia de trabajo de este entorno
 > **no tiene** `data/catalogo.db`, así que todo lo que necesita la BD real va
