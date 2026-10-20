@@ -2,7 +2,8 @@
 
 Estado a 2026-10-20 (tras lote 137, fallos 0): 207 títulos, 1032 huecos. Sinopsis 157/207, pósters 156, cast 470 filas. Restan ~50 sin resolver por TMDB-find + fase 2 (fecha ES, dinero, serie_info).
 Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, ficha overlay con sinopsis al final, strip de pósters, motor de filtros por sección (facetas + orden) y paginación reactiva, Joyas/Decepciones + Géneros/Directores/Actores, KPIs extra (Exigencia y Enriquecidos X/207) y Notas por década.
-Watcher `scripts/auto_vista.py` verificado. Suite 52/52 OK.
+Tuberías conectadas (2026-10-20): colecciones de TMDB (`belongs_to_collection`, 0 peticiones extra) en `title_collections`, con relaciones saga derivadas en `title_relations`; `schema_version` ya se registra al aplicar el esquema.
+Watcher `scripts/auto_vista.py` verificado. Suite 65/65 OK.
 
 ## Aparcado (2026-10-19): expansión, conectividad y escalado
 

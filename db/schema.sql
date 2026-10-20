@@ -5,6 +5,12 @@
 
 PRAGMA foreign_keys = ON;
 
+-- Versiones de esquema aplicadas (ver db/migrations/, forward-only).
+CREATE TABLE IF NOT EXISTS schema_version (
+  version TEXT PRIMARY KEY,
+  applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- 1) Título canónico (hechos del título)
 CREATE TABLE IF NOT EXISTS titles (
   tt TEXT PRIMARY KEY CHECK (tt GLOB 'tt[0-9]*'),
@@ -125,6 +131,16 @@ CREATE TABLE IF NOT EXISTS title_relations (
   CHECK (from_tt != to_tt)
 );
 
+-- Colección/franquicia (TMDB belongs_to_collection): la saga de un título.
+-- collection_id NULL = se consultó y el título no pertenece a ninguna colección.
+CREATE TABLE IF NOT EXISTS title_collections (
+  tt TEXT PRIMARY KEY REFERENCES titles(tt) ON DELETE CASCADE,
+  collection_id INTEGER,
+  collection_name TEXT,
+  source TEXT,
+  fetched_at TEXT
+);
+
 -- Obras origen (libros, cómics, manga… en los que está basado)
 CREATE TABLE IF NOT EXISTS works_origin (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,3 +203,4 @@ CREATE INDEX IF NOT EXISTS idx_user_status ON user_state(watch_status);
 CREATE INDEX IF NOT EXISTS idx_genres_genre ON title_genres(genre);
 CREATE INDEX IF NOT EXISTS idx_diffs_run ON sync_diffs(run_id);
 CREATE INDEX IF NOT EXISTS idx_diffs_tt ON sync_diffs(tt);
+CREATE INDEX IF NOT EXISTS idx_collections_id ON title_collections(collection_id);

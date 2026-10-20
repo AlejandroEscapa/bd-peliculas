@@ -9,6 +9,10 @@ SCHEMA_PATH = ROOT / "db" / "schema.sql"
 VIEWS_PATH = ROOT / "db" / "views.sql"
 DEFAULT_DB_PATH = ROOT / "data" / "catalogo.db"
 
+# Versión del esquema que aplica init_db. Sube con cada migración de
+# db/migrations/ (forward-only): ver db/migrations/0002_colecciones.sql.
+SCHEMA_VERSION = "0002_colecciones"
+
 
 def get_connection(db_path: str | Path = DEFAULT_DB_PATH) -> sqlite3.Connection:
     db_path = Path(db_path)
@@ -28,6 +32,9 @@ def init_db(db_path: str | Path = DEFAULT_DB_PATH) -> Path:
         conn.executescript(sql)
         if VIEWS_PATH.exists():
             conn.executescript(VIEWS_PATH.read_text(encoding="utf-8"))
+        for version in ("0001_base", SCHEMA_VERSION):
+            conn.execute(
+                "INSERT OR IGNORE INTO schema_version (version) VALUES (?)", (version,))
         conn.commit()
     finally:
         conn.close()

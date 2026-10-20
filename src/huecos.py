@@ -2,7 +2,11 @@
 
 Cada hueco es una fila {tt, campo}. Campos:
 cast, credits_extra, idioma, paises, estreno_es, duracion_exacta,
-rating_imdb, sinopsis, poster, presupuesto, taquilla, serie_info.
+rating_imdb, sinopsis, poster, presupuesto, taquilla, serie_info, coleccion.
+
+"coleccion" se cierra con la fila de title_collections: si el título no
+pertenece a ninguna colección se guarda con collection_id NULL, de modo que
+no se vuelve a pedir.
 """
 from __future__ import annotations
 
@@ -66,6 +70,11 @@ def listar_huecos(
                 hay = conn.execute(
                     "SELECT 1 FROM series_info WHERE tt = ?", (tid,)).fetchone()
                 falta(hay is None, "serie_info")
+
+            n_col = conn.execute(
+                "SELECT COUNT(*) AS n FROM title_collections WHERE tt = ?", (tid,)
+            ).fetchone()["n"]
+            falta(n_col == 0, "coleccion")
         return huecos
     finally:
         conn.close()

@@ -21,7 +21,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.db import DEFAULT_DB_PATH
+from src.db import DEFAULT_DB_PATH, init_db
 from src.huecos import listar_huecos
 from src.scraper import enriquecer
 
@@ -42,6 +42,10 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--db", default=str(DEFAULT_DB_PATH))
     args = ap.parse_args()
+
+    # Aplica el esquema vigente (idempotente): así una base de una versión
+    # anterior gana las tablas nuevas sin necesitar un import previo.
+    init_db(args.db)
 
     proveedor = cargar_proveedor(args.proveedor)
     tts = [args.tt] if args.tt else sorted({h["tt"] for h in listar_huecos(args.db)})

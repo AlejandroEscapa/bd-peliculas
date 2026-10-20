@@ -118,6 +118,14 @@ class ProveedorTMDB(ProveedorBase):
                 "status": detalle.get("status"),
                 "end_date": detalle.get("last_air_date") or None,
             }
+        # La colección/franquicia (saga) viene en la misma respuesta de detalle:
+        # cero peticiones extra. None = consultado, no tiene colección.
+        coleccion = detalle.get("belongs_to_collection") or {}
+        cid = coleccion.get("id")
+        datos["coleccion"] = (
+            {"id": int(cid), "nombre": coleccion.get("name") or ""}
+            if cid else None
+        )
 
         cast = []
         for i, m in enumerate((creditos.get("cast") or [])[:15]):

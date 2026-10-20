@@ -18,6 +18,8 @@ un payload con esa forma:
   poster: {"url": …, "source": …} | "https://…"
   presupuesto / taquilla: {"amount": N, "currency": "USD"}
   serie_info: {"seasons", "episodes", "status", "end_date"}
+  coleccion: {"id": 123, "nombre": "The Matrix Collection"} | None
+    (None = consultado y el título no pertenece a ninguna colección)
 """
 from __future__ import annotations
 
@@ -159,6 +161,17 @@ def enriquecer(
                 (tt, s.get("seasons"), s.get("episodes"), s.get("status"),
                  s.get("end_date"), fuente))
             rellenados.append("serie_info")
+
+        if "coleccion" in datos and toca("coleccion"):
+            # Se escribe siempre, incluso sin colección: así el hueco se
+            # cierra y no se vuelve a pedir esta información.
+            c = datos["coleccion"] or {}
+            cur.execute(
+                "INSERT OR REPLACE INTO title_collections "
+                "(tt, collection_id, collection_name, source, fetched_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (tt, c.get("id"), c.get("nombre"), fuente, ahora))
+            rellenados.append("coleccion")
 
         if dry_run:
             conn.rollback()

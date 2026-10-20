@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .db import get_connection
 
-VERSION = "0001_base"
+VERSION = "0002_colecciones"
 
 
 def backup(db_path: str | Path, destino: str | Path) -> dict:
