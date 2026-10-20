@@ -10,11 +10,11 @@ Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
 > **Handoff completo** (guion, verificaciones, mapa del código, decisiones
 > tomadas y trampas conocidas): [`docs/superpowers/plans/2026-10-20-handoff.md`](docs/superpowers/plans/2026-10-20-handoff.md).
 
-> Estado al dejar el PC: `main` está **por delante de `origin/main` y sin
-> push** (a propósito: el snapshot no se puede regenerar sin tu base). Suite
-> 69/69 en verde. La copia de trabajo de este entorno **no tiene**
-> `data/catalogo.db`, así que todo lo que necesita la BD real va en tu
-> máquina. Handoff completo: `docs/superpowers/plans/2026-10-20-handoff.md`.
+> Estado al dejar el PC: **el código está publicado** en `origin/main`
+> (suite 94/94 en verde). Lo que **no** está publicado es el snapshot:
+> `preview/dashboard.html` sigue siendo el viejo, porque regenerarlo exige
+> tu `data/catalogo.db`, que no existe fuera de tu máquina. Handoff completo:
+> `docs/superpowers/plans/2026-10-20-handoff.md`.
 
 ### 1. Publicar lo que ya está hecho (~20 min)
 
@@ -41,9 +41,10 @@ Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
       ```
       Verificar: `preview/dashboard.html` pesa más que antes y la ficha de un
       título con saga muestra el bloque "Colección".
-- [ ] **Publicar**:
+- [ ] **Publicar el snapshot** (el código ya está subido; esto es lo único
+      que queda por ver):
       ```bat
-      git add -A
+      git add preview/dashboard.html
       git commit -m "chore: regenera el snapshot del panel"
       git push origin main
       ```
@@ -202,7 +203,7 @@ Descartadas por ahora, a debat si las quieres:
 ## Despliegue web
 
 - Estado: desplegado en Vercel y GitHub (`https://github.com/AlejandroEscapa/bd-peliculas`).
-- **Ojo: lo desplegado va por detrás de `main`.** El HTML publicado es el de la rama (5 KPIs, sin "Notas por década", sin bloque "Colección" y con los botones de KPI muertos). Se pone al día con el push del punto 1 de "PENDIENTES AL LLEGAR A CASA".
+- **Ojo: el código está publicado, el HTML todavía no.** `preview/dashboard.html` sigue siendo el de la rama (5 KPIs, sin "Notas por década", sin bloque "Colección", sin "Para ti" y con los botones de KPI muertos), porque regenerarlo necesita tu base. Se pone al día con el punto 1 de "PENDIENTES AL LLEGAR A CASA".
 - `vercel.json` reescribe `/` → `/preview/dashboard.html`.
 - `preview/dashboard.html` no tiene dependencias; se sirve como estático (Vercel) o en local.
 - Opción B (gestionado Cloudflare): herramientas `sites_*` disponibles si quieres preview/producción con D1/R2 y auth; este proyecto hoy es SQLite local + HTML estático, así que habría que adaptarlo antes.
