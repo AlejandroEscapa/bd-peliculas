@@ -177,9 +177,10 @@ documentado como hueco abierto, no como tarea.
 
 ### 5.4 Lo visual (una idea a la vez, se propone antes de implementarse)
 
-1. Ficha: bloque "Colección / Saga" con las partes de tu catálogo y tu nota en
-   cada una.
-2. Sección "Tus guionistas favoritos" (`title_credits` extra, ya descargado).
+1. **Hecho (2026-10-20).** Ficha: bloque "Colección" con las partes de tu
+   catálogo, por año y con tu nota; cada parte abre su propia ficha.
+2. **Pendiente de proponer.** Sección "Tus guionistas favoritos"
+   (`title_credits` extra, ya descargado).
 
 ---
 

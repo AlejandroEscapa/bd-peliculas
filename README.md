@@ -17,6 +17,7 @@ Importas tu export de IMDb una vez y el catálogo se queda con tus notas. A part
 - **Reimportar no destruye nada.** El CSV solo actualiza las columnas que posee; un campo vacío nunca borra una sinopsis, un póster, el reparto ni tu nota. Cada cambio queda auditado en `sync_diffs`.
 - **El enriquecido va por huecos.** `huecos.py` calcula qué falta y el scraper pide solo eso a TMDB (es-ES, fallback en-US) y OMDb. Un título roto no aborta el lote.
 - **El panel es un fichero estático.** `generar_vista.py` convierte la base en un dashboard HTML sin framework, sin build y sin peticiones al servidor. La paginación es 15 + 15 con JavaScript puro.
+- **Las sagas salen gratis.** La colección de cada título viene en la misma respuesta de TMDB que ya se pedía (`belongs_to_collection`): cero peticiones extra. De ahí se derivan las relaciones de saga y la ficha muestra las partes que tienes, por año y con tu nota.
 
 El resultado es un catálogo que puedes abrir en local, versionar como snapshot y desplegar en cualquier hosting estático.
 

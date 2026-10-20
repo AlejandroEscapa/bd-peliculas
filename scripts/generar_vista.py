@@ -115,6 +115,16 @@ text-transform: uppercase; letter-spacing: 0.06em; color: var(--sub);
 margin-bottom: 4px; }
 .ficha-sinopsis { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
 .ficha-sinopsis .leer-mas { display: none; }
+.saga { display: grid; gap: 6px; }
+.saga-nombre { font-size: 13px; color: var(--sub); }
+.saga-item { display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
+width: 100%; text-align: left; padding: 8px 10px; border: 1px solid var(--line);
+border-radius: 10px; background: var(--bg); color: var(--ink); cursor: pointer;
+min-height: 44px; }
+.saga-item:hover { border-color: var(--accent); }
+.saga-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.saga-titulo { font-weight: 600; }
+.saga-meta { color: var(--sub); font-size: 12px; white-space: nowrap; }
 tr[data-tt] { cursor: pointer; }
 footer { color: var(--sub); font-size: 12px; text-align: center; margin-top: 26px; }
 .poster-section { padding: 16px; }
@@ -440,6 +450,15 @@ def generar(db_path: Path) -> str:
     genero_rows = c.execute(
         "SELECT tt, genre FROM title_genres ORDER BY tt, genre"
     ).fetchall()
+    coleccion_rows = c.execute(
+        """SELECT c.collection_id, c.collection_name, c.tt,
+                  COALESCE(t.title_es, t.original_title, '') AS titulo,
+                  t.year, u.my_rating
+           FROM title_collections c
+           JOIN titles t ON t.tt = c.tt
+           LEFT JOIN user_state u ON u.tt = c.tt
+           WHERE c.collection_id IS NOT NULL
+           ORDER BY c.collection_id, t.year, t.tt""").fetchall()
     c.close()
 
     e = html.escape
@@ -565,6 +584,21 @@ def generar(db_path: Path) -> str:
     gen_por_tt: dict[str, list[str]] = {}
     for r in genero_rows:
         gen_por_tt.setdefault(r["tt"], []).append(r["genre"])
+    # Colecciones: qué saga comparte y qué partes tienes tú, por año.
+    colecciones: dict[int, dict] = {}
+    for r in coleccion_rows:
+        grupo = colecciones.setdefault(r["collection_id"], {
+            "id": r["collection_id"],
+            "nombre": r["collection_name"] or "",
+            "partes": [],
+        })
+        grupo["partes"].append({
+            "tt": r["tt"], "titulo": r["titulo"], "year": r["year"],
+            "nota": r["my_rating"]})
+    coleccion_por_tt: dict[str, dict] = {}
+    for grupo in colecciones.values():
+        for parte in grupo["partes"]:
+            coleccion_por_tt[parte["tt"]] = grupo
     catalogo_map: dict[str, dict] = {}
     for r in fichas:
         tt = r["tt"]
@@ -594,6 +628,7 @@ def generar(db_path: Path) -> str:
             "directores": dir_por_tt.get(tt, []),
             "paises": pais_por_tt.get(tt, []),
             "generos": gen_por_tt.get(tt, []),
+            "coleccion": coleccion_por_tt.get(tt),
         }
     catalogo_json = json.dumps(catalogo_map, ensure_ascii=False).replace("</", "<\\/")
     pend_rows = "".join(
@@ -1332,6 +1367,40 @@ def generar(db_path: Path) -> str:
     pasa('Dirección', (f.directores || []).join(', '));
     pasa('Géneros', (f.generos || []).join(', '));
     pasa('Países', (f.paises || []).join(', '));
+    // Saga: las partes de la colección que tienes tú, por año y con tu nota.
+    const col = f.coleccion;
+    if (col && (col.partes || []).length) {
+      const b = document.createElement('div');
+      b.className = 'bloque';
+      const cab = document.createElement('b');
+      cab.textContent = 'Colección';
+      b.appendChild(cab);
+      const cont = document.createElement('div');
+      cont.className = 'saga';
+      const nombre = document.createElement('div');
+      nombre.className = 'saga-nombre';
+      nombre.textContent = col.nombre || 'Sin nombre';
+      cont.appendChild(nombre);
+      col.partes.forEach((p) => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'saga-item';
+        item.dataset.tt = p.tt;
+        const etiqueta = document.createElement('span');
+        etiqueta.className = 'saga-titulo';
+        etiqueta.textContent = p.titulo || p.tt;
+        const meta = document.createElement('span');
+        meta.className = 'saga-meta';
+        meta.textContent = (p.year || '?') + ' · ' +
+          (p.nota != null ? 'tu nota ' + p.nota : 'sin valorar');
+        item.appendChild(etiqueta);
+        item.appendChild(meta);
+        item.addEventListener('click', () => abrirFicha(p.tt));
+        cont.appendChild(item);
+      });
+      b.appendChild(cont);
+      bloques.appendChild(b);
+    }
     const sinopsis = q('#ficha-sinopsis-texto');
     sinopsis.textContent = f.sinopsis || 'Sin sinopsis disponible todavía.';
     const leerMas = q('#ficha-leer-mas');

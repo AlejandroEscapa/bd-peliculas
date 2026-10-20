@@ -181,6 +181,37 @@ class TestVistaHtml(unittest.TestCase):
         # El fixture no trae sinopsis, póster ni reparto: 0 de 3 enriquecidos.
         self.assertIn('<div class="n">0/3</div>', pagina)
 
+    def _generar_con_colecciones(self, *tts):
+        """Página con tts dentro de una misma colección de saga."""
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        db_path = Path(tmp.name) / "test.db"
+        import_csv(FIXTURE, db_path)
+        conn = sqlite3.connect(db_path)
+        for tt in tts:
+            conn.execute(
+                "INSERT OR REPLACE INTO title_collections "
+                "(tt, collection_id, collection_name, source) "
+                "VALUES (?, 2344, 'Coleccion Test', 'test')", (tt,))
+        conn.commit()
+        conn.close()
+        return generar(db_path)
+
+    def test_coleccion_en_el_catalogo_json(self):
+        pagina = self._generar_con_colecciones("tt0111161", "tt0068646")
+        self.assertIn('"coleccion"', pagina)
+        self.assertIn("Coleccion Test", pagina)
+
+    def test_titulo_sin_coleccion_no_inventa_ninguna(self):
+        pagina = self._generar_con_colecciones("tt0111161")
+        self.assertIn('"coleccion": null', pagina)
+
+    def test_ficha_muestra_la_saga_con_partes_y_notas(self):
+        pagina = self._generar_con_colecciones("tt0111161", "tt0068646")
+        for marcador in ("saga-item", "saga-nombre", "saga-meta",
+                         "abrirFicha(p.tt)", ".saga-item {", "'Colección'"):
+            self.assertIn(marcador, pagina)
+
     def test_boton_kpi_aplica_preset_en_lista(self):
         pagina = self._generar_con_fixture()
         for clave in ("total", "valoradas", "pendientes", "faltan",
