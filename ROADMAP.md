@@ -4,6 +4,77 @@ Estado a 2026-10-18 (tras lote 137, fallos 0): 207 títulos, 1032 huecos. Sinops
 Panel simple en `preview/dashboard.html`: buscador + Joyas/Decepciones + Actores de confianza,
 paginación 15+15. Watcher `scripts/auto_vista.py` verificado. Suite 35/35 OK.
 
+## Aparcado (2026-10-19): expansión, conectividad y escalado
+
+**Estado:** pendiente de decisión. No hay spike ejecutado ni código de esta
+línea. No se implementa por ahora; se retoma cuando haya necesidad real.
+
+**Objetivo si se retoma:** que hasta 10 amigos usen la herramienta con su
+export de IMDb, cada uno con sus notas, desde web y móvil, con coste recurrente
+0 y una base técnica que no sea un juguete.
+
+**Punto de partida (no decidido):**
+
+- Círculo privado, gratis, sin monetización. Nada de registro público.
+- La idea inicial era una BD SQLite por usuario (`users/{uuid}/catalogo.db`) y
+  un `control.db` central solo para cuentas, sesiones, invitaciones y jobs.
+- PWA primero; app nativa solo si el uso real la justifica.
+- TMDB/OMDb son gratis, pero OMDb limita a 1.000 peticiones/día y es no
+  comercial; TMDB exige atribución y uso no comercial.
+
+**Hallazgo de la auditoría (2026-10-19):** “una BD por usuario” es la
+restricción que más complica todo. El aislamiento lógico con `user_id` basta
+para notas privadas y es lo que usan los SaaS serios; la BD física obliga a N
+migraciones, N backups y N jobs, y choca con los free tiers. Si se exige
+aislamiento físico, las únicas vías gratis son Turso (100 bases) o una VM con
+SQLite; no D1 (10 bases) ni Supabase/Neon (una base).
+
+**Candidatos gratis verificados (2026):**
+
+- **Cloudflare full stack:** Workers 100k peticiones/día y 10 ms de CPU; D1
+  5 GB, 5 M lecturas/día, 100k escrituras/día y 10 bases; Queues gratis desde
+  feb-2026 con 10k operaciones/día; R2 10 GB; Pages. Una D1 con `user_id`,
+  PWA y auth propia. Reescritura a TypeScript; si los 10 ms no llegan,
+  Workers Paid cuesta 5 $/mes.
+- **Oracle Always Free + Python:** 2 OCPU/12 GB, 200 GB de disco; Docker +
+  Caddy + FastAPI + SQLite. Reutiliza dominio y tests; riesgo de reclamación
+  por inactividad (7 días con CPU/red/memoria <20%), parches y backups.
+- **Supabase/Neon:** Supabase 500 MB, 500k Edge invocations, 150 s/2 s de CPU,
+  pero se pausa tras 7 días sin actividad; Neon 1 GB y 100 CU-horas con
+  autosuspend a los 5 min. Auth resuelta en Supabase; no hay BD por usuario.
+- **Turso + Workers:** 100 bases, 5 GB, 500 M lecturas y 10 M escrituras al
+  mes; única vía gestionada que conserva BD física por amigo, a cambio de dos
+  proveedores y reescritura.
+- **PC de casa + Tailscale Funnel:** 0 €, Python intacto, URL `*.ts.net` sin
+  dominio; Funnel en beta, ancho de banda no publicado y dependes de tu equipo.
+- **Descartados:** Fly/Render/Railway free con SQLite persistente, Firestore
+  (NoSQL; Functions exige Blaze; no es BD física) y Vercel Hobby como worker
+  (cron diario y términos de uso personal/no comercial).
+
+**Spike pendiente (2 días, sin código de producto):**
+
+1. Desplegar Worker + D1 + Queue + Pages gratis.
+2. Importar un CSV real de 207 filas para dos usuarios y aislar sus notas.
+3. Enriquecer un título desde la cola y medir CPU, escrituras y operaciones.
+4. Criterio: import correcto, dos usuarios sin cruces, un título enriquecido,
+   cero planes de pago y ningún error de CPU. Si falla, evaluar Oracle.
+
+**Decisiones abiertas:**
+
+- Aislamiento lógico (`user_id`) frente a BD física por usuario.
+- Cloudflare (cero ops, reescritura) frente a Oracle (reutiliza Python, ops).
+- Auth propia frente a Supabase Auth.
+- Qué significa “app”: PWA primero; nativa solo con uso que la justifique.
+
+**Por qué se aparca:** auth, worker, backups, migraciones, despliegue y soporte
+son un proyecto de semanas; hoy la app local cubre el uso.
+
+**Disparador para retomarlo:** 3-5 personas pidiéndolo, o disponer de tiempo
+para el spike y la beta.
+
+**Referencia:** `docs/superpowers/specs/2026-10-19-multiusuario-f0-design.md`
+(superada; no implementar tal cual).
+
 ## Pendiente de ejecutar (tú, en terminal nueva con tus vars)
 
 - [x] Lote completo 137 ejecutado por el usuario con `fallos: 0` (1633 → 1032 huecos). Quedan ~50 títulos que TMDB-find no resolvió: reintentar tras fase 2 o con OMDb-solo.
