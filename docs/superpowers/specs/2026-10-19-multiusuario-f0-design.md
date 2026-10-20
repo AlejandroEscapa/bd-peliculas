@@ -1,7 +1,9 @@
 # F0 — Catálogo multiusuario para círculo privado
 
 - Fecha: 2026-10-19
-- Estado: diseño aprobado en chat; pendiente de revisión de esta spec
+- Estado: **superada el 2026-10-19**. El diseño de catálogo compartido con
+  Postgres quedó descartado al fijar una BD por usuario. Se conserva como
+  registro de análisis; no implementar tal cual. Ver `ROADMAP.md`.
 - Alcance: F0 (base multiusuario). No incluye PWA, registro público ni app nativa.
 
 ## 1. Objetivo
