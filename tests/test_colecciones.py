@@ -270,6 +270,46 @@ class TestColecciones(unittest.TestCase):
         self.assertEqual(res["relaciones_nuevas"], 0)
 
 
+class TestScriptDerivarRelaciones(unittest.TestCase):
+    """El comando de línea deriva relaciones sobre una base real."""
+
+    def test_script_deriva_y_es_idempotente(self):
+        import subprocess
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        db_path = Path(tmp.name) / "test.db"
+        init_db(db_path)
+        conn = get_connection(db_path)
+        try:
+            for tt, anio in (("tt0000091", 1999), ("tt0000092", 2003)):
+                conn.execute(
+                    "INSERT OR IGNORE INTO titles (tt, title_es, title_type, year) "
+                    "VALUES (?, ?, 'Película', ?)", (tt, tt, anio))
+                conn.execute(
+                    "INSERT OR REPLACE INTO title_collections "
+                    "(tt, collection_id, collection_name, source) "
+                    "VALUES (?, 2344, 'Coleccion Test', 'test')", (tt,))
+            conn.commit()
+        finally:
+            conn.close()
+
+        script = ROOT / "scripts" / "derivar_relaciones.py"
+        for _ in range(2):
+            proc = subprocess.run(
+                [sys.executable, str(script), "--db", str(db_path)],
+                capture_output=True, text=True, cwd=str(ROOT))
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("relaciones_nuevas", proc.stdout)
+
+        conn = get_connection(db_path)
+        try:
+            n = conn.execute(
+                "SELECT COUNT(*) AS n FROM title_relations").fetchone()["n"]
+            self.assertEqual(n, 1)  # un par: 1 relación universe
+        finally:
+            conn.close()
+
+
 class TestProveedorTMDBColeccion(unittest.TestCase):
     """El proveedor lee belongs_to_collection de la respuesta que ya pide."""
 

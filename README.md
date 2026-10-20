@@ -85,6 +85,7 @@ En Linux o macOS, cambia `set` por `export` y `start` por `open`. Sin `OMDB_API_
 |---|---|
 | `python scripts/actualizar_peliculas.py <csv>` | Importa un delta y registra diffs y cuarentena |
 | `python scripts/scrapear_peliculas.py --proveedor ... --limite N --delay S` | Rellena huecos con pausa entre peticiones |
+| `python scripts/derivar_relaciones.py` | Deduce relaciones de saga desde las colecciones |
 | `python scripts/generar_vista.py` | Regenera `preview/dashboard.html` |
 | `python scripts/auto_vista.py --una-vez` | Regenera el panel una vez; sin `--una-vez`, vigila la BD |
 | `python scripts/backup.py` | Vuelca la base a SQL + manifiesto JSON |
