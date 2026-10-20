@@ -3,7 +3,96 @@
 Estado a 2026-10-20 (tras lote 137, fallos 0): 207 títulos, 1032 huecos. Sinopsis 157/207, pósters 156, cast 470 filas. Restan ~50 sin resolver por TMDB-find + fase 2 (fecha ES, dinero, serie_info).
 Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, ficha overlay con sinopsis al final, strip de pósters, motor de filtros por sección (facetas + orden) y paginación reactiva, Joyas/Decepciones + Géneros/Directores/Actores, KPIs extra (Exigencia y Enriquecidos X/207) y Notas por década.
 Tuberías conectadas (2026-10-20): colecciones de TMDB (`belongs_to_collection`, 0 peticiones extra) en `title_collections`, con relaciones saga derivadas en `title_relations`; `schema_version` ya se registra al aplicar el esquema. La ficha muestra el bloque "Colección" con las partes de tu catálogo, por año y con tu nota.
-Watcher `scripts/auto_vista.py` verificado. Suite 65/65 OK.
+Watcher `scripts/auto_vista.py` verificado. Suite 69/69 OK.
+
+## PENDIENTES AL LLEGAR A CASA (2026-10-20)
+
+> Estado al dejar el PC: `main` = `dc16817`, **14 commits por delante de
+> `origin/main` y sin push** (a propósito: el snapshot no se puede regenerar
+> sin tu base). Suite 69/69 en verde. La copia de trabajo de este entorno
+> **no tiene** `data/catalogo.db`, así que todo lo que necesita la BD real va
+> en tu máquina.
+
+### 1. Publicar lo que ya está hecho (~20 min)
+
+- [ ] **Rellenar el hueco `coleccion`** — el scraper lee
+      `belongs_to_collection` de la respuesta de detalle que TMDB ya te
+      pedía, así que **no gastas peticiones extra**. Ojo: el scraper ahora
+      aplica el esquema vigente, tu base gana la tabla `title_collections`
+      sola (no hace falta reimportar el CSV).
+      ```bat
+      python scripts/scrapear_peliculas.py --proveedor src.proveedores.combinado:ProveedorCombinado --limite 207 --delay 1.5
+      ```
+      Verificar: el hueco `coleccion` desaparece de `listar_huecos()`.
+- [ ] **Derivar las sagas** (idempotente, se puede repetir sin miedo):
+      ```bat
+      python scripts/derivar_relaciones.py
+      ```
+      Verificar: imprime "N colecciones, M relaciones nuevas". Si `M = 0`, tus
+      títulos no comparten saga (normal si tienes pocas de una misma
+      colección): no es un error.
+- [ ] **Regenerar el snapshot** (esto es lo que faltaba para que se vieran
+      los KPIs nuevos y la sección por década):
+      ```bat
+      python scripts/generar_vista.py
+      ```
+      Verificar: `preview/dashboard.html` pesa más que antes y la ficha de un
+      título con saga muestra el bloque "Colección".
+- [ ] **Publicar**:
+      ```bat
+      git add -A
+      git commit -m "chore: regenera el snapshot del panel"
+      git push origin main
+      ```
+      El push dispara el CI de GitHub Actions y Vercel redespliega.
+
+### 2. Comprobar en el navegador (~10 min)
+
+- [ ] Los **7 KPIs** (salen "Exigencia" y "Enriquecidos", que no estaban en el
+      snapshot publicado) y la sección **"Notas por década"**.
+- [ ] Los botones de los KPIs: **antes estaban muertos** (la rama los dejó sin
+      wiring). Ahora "Valoradas" y "Sin enriquecer" aplican un preset sobre
+      Lista completa. "Tu nota media" y "Exigencia" salen **deshabilitados**:
+      son promedios, no conjuntos de títulos.
+- [ ] La **ficha** con el bloque "Colección": partes de tu saga por año, con tu
+      nota, y el clic en una parte abre su ficha.
+- [ ] En móvil: responsive, sinopsis plegada con "Leer más".
+
+### 3. Decidir la siguiente idea visual (una por vez)
+
+- [ ] "Tus guionistas favoritos" — el dato (`title_credits` extra: guionista,
+      productor, compositor) **ya está descargado**, solo es mostrarlo.
+- [ ] "Mi perfil" — lift por género/director/actor (tu media en la faceta
+      menos tu media global). Es la pieza que hace explicable el motor.
+- [ ] "Qué ver hoy" — ruleta determinista por día sobre los pendientes.
+- [ ] Bloque "Colección" **completo**: las partes que no tienes (1 petición
+      por colección, y las colecciones son pocas).
+- [ ] Mapa de países (sigue en la lista desde el principio).
+
+### 4. Backlog de datos
+
+- [ ] Fase 2 TMDB: `estreno_es`, `presupuesto`/`taquilla`, `serie_info`.
+- [ ] Los ~50 títulos que TMDB-find no resolvió (reintentar tras fase 2 o con
+      OMDb-solo; OMDb tiene 1000 peticiones/día).
+
+### 5. NO tocar ahora
+
+- [ ] Multiusuario: aparcado, con su análisis de free tiers en la sección
+      "Aparcado" de este mismo archivo. Solo si 3-5 personas lo piden.
+- [ ] `works_origin`: no hay fuente barata (ni TMDB ni OMDb dan la obra
+      origen). Queda documentado, no es una tarea.
+- [ ] Refactor de `generar_vista.py` (71 KB): solo cuando toque implementar el
+      motor de verdad; el MVP plan lo tenía como item 4.
+
+### Notas de seguridad
+
+- Red de seguridad del WIP original: `stash@{0}` y
+  `%TEMP%\local_wip_2026-10-20.patch`. Cuando el push esté hecho, `stash@{0}`
+  se puede borrar (`git stash drop`).
+- Las claves (`TMDB_BEARER`, `OMDB_API_KEY`) están en tu entorno de Windows,
+  fuera del repo. Si abres una terminal nueva, recupera su valor o re-ejecuta
+  el `setx`; nunca las pegues en un fichero.
+
 
 ## Aparcado (2026-10-19): expansión, conectividad y escalado
 
@@ -79,7 +168,9 @@ para el spike y la beta.
 ## Pendiente de ejecutar (tú, en terminal nueva con tus vars)
 
 - [x] Lote completo 137 ejecutado por el usuario con `fallos: 0` (1633 → 1032 huecos). Quedan ~50 títulos que TMDB-find no resolvió: reintentar tras fase 2 o con OMDb-solo.
-- [ ] Regenerar: `python scripts/auto_vista.py --una-vez` (o dejar el watcher abierto).
+- [x] Mezcla de la rama `feat/responsive-filtros` (responsive, ficha overlay con sinopsis, motor de filtros por sección) y del WIP local (KPIs Exigencia/Enriquecidos, Notas por década, botones de KPI con preset).
+- [x] Presets de KPI operativos (la rama los dejó muertos: abrían un panel `kpi-*` que no existe en `SECCIONES`).
+- [ ] Regenerar: `python scripts/auto_vista.py --una-vez` (o dejar el watcher abierto). **Requiere tu base**: la copia sin `data/catalogo.db` no puede. Ver "PENDIENTES AL LLEGAR A CASA".
 
 ## Fase 2 TMDB (diseño aprobado, sin empezar)
 
@@ -89,20 +180,25 @@ para el spike y la beta.
 
 ## Recomendadas beta (aparcada a tu orden)
 
-- Motor propuesto: híbrido (afinidad local por género/director/cast + TMDB `/recommendations` solo para huecos). Sin esquema nuevo en beta; si escala, tabla `title_relations` ya existe (`universe`, `related`…).
+- Motor propuesto: híbrido (afinidad local por género/director/cast + similitud textual TF-IDF sobre sinopsis). Sin filtrado colaborativo: con un solo usuario no hay señal de otros que aprender.
+- **Ya está el combustible**: `title_relations` se rellena sola desde las colecciones de TMDB (0 peticiones extra) y `title_collections` ya se persiste. Falta el motor (`src/motor.py`, cálculo en Python en el build) y la capa de similitud.
+- Especificación completa y orden de ataque: [`docs/superpowers/plans/2026-10-20-motor-y-profesionalizacion.md`](docs/superpowers/plans/2026-10-20-motor-y-profesionalizacion.md).
 
 ## Ideas de interfaz (una por una, como pediste)
 
-Hechas: buscador Lista completa, Joyas/Decepciones ±1.5, Actores de confianza, buscador global + ficha overlay con sinopsis, strip de pósters, filtros por sección y orden, layout responsive, KPIs extra (Exigencia + Enriquecidos X/207), Notas por década (barras CSS).
-Descartadas por ahora, a debatir si las quieres:
+Hechas: buscador Lista completa, Joyas/Decepciones ±1.5, Actores de confianza, buscador global + ficha overlay con sinopsis, strip de pósters, filtros por sección y orden, layout responsive, KPIs extra (Exigencia + Enriquecidos X/207), Notas por década (barras CSS), bloque "Colección" en la ficha con las partes de tu saga.
+Descartadas por ahora, a debat si las quieres:
 
 - [ ] Últimas valoradas + Maratón corto (<110 min, 7+ IMDb).
 - [ ] Ruleta «Qué ver hoy» (3 pendientes 7.5+, determinista por día).
 - [ ] Mapa de países (con `title_countries`, barras CSS).
+- [ ] Tus guionistas favoritos (`title_credits` extra, ya descargado).
+- [ ] Mi perfil: lift por género/director/actor (tu media en la faceta − tu media global).
 
 ## Despliegue web
 
 - Estado: desplegado en Vercel y GitHub (`https://github.com/AlejandroEscapa/bd-peliculas`).
+- **Ojo: lo desplegado va 14 commits por detrás.** El HTML publicado es el de la rama (5 KPIs, sin "Notas por década", sin bloque "Colección" y con los botones de KPI muertos). Se pone al día con el push del punto 1 de "PENDIENTES AL LLEGAR A CASA".
 - `vercel.json` reescribe `/` → `/preview/dashboard.html`.
 - `preview/dashboard.html` no tiene dependencias; se sirve como estático (Vercel) o en local.
 - Opción B (gestionado Cloudflare): herramientas `sites_*` disponibles si quieres preview/producción con D1/R2 y auth; este proyecto hoy es SQLite local + HTML estático, así que habría que adaptarlo antes.
