@@ -10,11 +10,11 @@ Watcher `scripts/auto_vista.py` verificado. Suite 69/69 OK.
 > **Handoff completo** (guion, verificaciones, mapa del código, decisiones
 > tomadas y trampas conocidas): [`docs/superpowers/plans/2026-10-20-handoff.md`](docs/superpowers/plans/2026-10-20-handoff.md).
 
-> Estado al dejar el PC: `main` = `5a5aca8`, **15 commits por delante de
-> `origin/main` y sin push** (a propósito: el snapshot no se puede regenerar
-> sin tu base). Suite 69/69 en verde. La copia de trabajo de este entorno
-> **no tiene** `data/catalogo.db`, así que todo lo que necesita la BD real va
-> en tu máquina.
+> Estado al dejar el PC: `main` está **por delante de `origin/main` y sin
+> push** (a propósito: el snapshot no se puede regenerar sin tu base). Suite
+> 69/69 en verde. La copia de trabajo de este entorno **no tiene**
+> `data/catalogo.db`, así que todo lo que necesita la BD real va en tu
+> máquina. Handoff completo: `docs/superpowers/plans/2026-10-20-handoff.md`.
 
 ### 1. Publicar lo que ya está hecho (~20 min)
 
@@ -201,7 +201,7 @@ Descartadas por ahora, a debat si las quieres:
 ## Despliegue web
 
 - Estado: desplegado en Vercel y GitHub (`https://github.com/AlejandroEscapa/bd-peliculas`).
-- **Ojo: lo desplegado va 14 commits por detrás.** El HTML publicado es el de la rama (5 KPIs, sin "Notas por década", sin bloque "Colección" y con los botones de KPI muertos). Se pone al día con el push del punto 1 de "PENDIENTES AL LLEGAR A CASA".
+- **Ojo: lo desplegado va por detrás de `main`.** El HTML publicado es el de la rama (5 KPIs, sin "Notas por década", sin bloque "Colección" y con los botones de KPI muertos). Se pone al día con el push del punto 1 de "PENDIENTES AL LLEGAR A CASA".
 - `vercel.json` reescribe `/` → `/preview/dashboard.html`.
 - `preview/dashboard.html` no tiene dependencias; se sirve como estático (Vercel) o en local.
 - Opción B (gestionado Cloudflare): herramientas `sites_*` disponibles si quieres preview/producción con D1/R2 y auth; este proyecto hoy es SQLite local + HTML estático, así que habría que adaptarlo antes.
