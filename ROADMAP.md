@@ -64,6 +64,37 @@ frescura el resto de campos de TMDB. Fix en `src/proveedores/tmdb.py`
   motivo se corta a dos líneas (con `…`) para que el botón nunca se solape.
   Al abrir los motivos secundarios, la celda crece (`height: auto`).
 
+## Secciones plegables (2026-10-22)
+
+- **Todas las secciones menos las pills** se pliegan: el strip de pósters
+  ("Tus favoritas, en cartel") se queda siempre visible. Plegada, una sección
+  es una tira con el título, una descripción corta (con el texto íntegro en
+  el `title`) y la flecha de la derecha.
+- **El mando es un botón de verdad** (`plegable-tap`) transparente que cubre
+  toda la cabecera: se pliega con clic en el título, en la descripción o en
+  la flecha, y con Enter o Espacio desde el teclado. `aria-expanded` y
+  `aria-controls` van con él, y la flecha gira al desplegar.
+- **"Para ti" arranca abierta**; el resto, plegadas. Si un KPI lleva a una
+  sección plegada, esta se despliega antes de llevarte allí (si no, el KPI
+  apuntaría a una tira sin contenido).
+- La cabecera pasa a ser una fila: título, descripción y acciones (filtro y
+  flecha) en la misma línea. En móvil la descripción baja a su propia línea.
+
+## Ficha y listas (2026-10-22)
+
+- **La colección va debajo de la sinopsis** y ocupa todo el ancho de la ficha:
+  las partes de la saga son tarjetas en rejilla (`auto-fill`), no una columna
+  estrecha. La nota ya no se repite bajo el póster (está en la línea de
+  metadatos, con el título).
+- **Actores de confianza** tenía las cifras sin clase de columna: los
+  números quedaban a la izquierda mientras la cabecera pedía el centro. Ahora
+  usa las mismas clases que las demás tablas (`c-num`).
+- **Joyas y Decepciones**: el título con su año va centrado y con más aire
+  hasta la fila de datos (tu nota, IMDb, diferencia).
+- **"Mi perfil"**: cada item mide 42 px, como una fila de "Tus favoritas", y
+  el subtítulo va en su propio elemento para que caiga alineado en todas las
+  filas.
+
 ## Publicar sin perder nada (2026-10-21)
 
 - `scripts/publicar.py` sustituye al `generar_vista.py` + `git commit` a mano: copia la base, genera a un temporal, **compara con el snapshot publicado** y solo lo sustituye si no pierde títulos, valoradas, sinopsis, pósteres ni reparto. Si pierde algo, sale con código 3 sin tocar nada.

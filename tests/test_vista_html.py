@@ -382,7 +382,7 @@ class TestVistaHtml(unittest.TestCase):
             self.assertNotIn('data-filtro="actores"', pagina)
 
     def test_joyas_y_decepciones_son_tarjeta(self):
-        """Título arriba y los tres datos alineados debajo."""
+        """Título arriba (centrado) y los tres datos alineados debajo."""
         pagina = self._generar_con_fixture()
         for tabla in ("tabla-joyas", "tabla-decepciones"):
             self.assertIn(f'class="paginada tabla-tarjeta" id="{tabla}"', pagina)
@@ -390,6 +390,54 @@ class TestVistaHtml(unittest.TestCase):
         self.assertIn("filaDeTarjeta", pagina)
         self.assertIn("tarjeta-datos", pagina)
         self.assertIn("tarjeta: true", pagina)
+        # El título va centrado y con más aire hasta los datos.
+        self.assertIn(".tarjeta-titulo { font-size: 16px;", pagina)
+        self.assertIn("text-align: center; }", pagina)
+        self.assertIn("margin-top: 18px; }", pagina)
+
+    def test_las_secciones_se_plegan(self):
+        pagina = self._generar_con_motor()
+        # Todas menos el strip de pósters son plegables.
+        for sec in ("para-ti", "perfil", "top", "joyas", "decepciones",
+                    "generos", "directores", "actores", "decadas", "lista",
+                    "seguimiento"):
+            self.assertIn(f'data-plegable="{sec}"', pagina)
+        self.assertNotIn('data-plegable="posters"', pagina)
+        # El mando: un botón que cubre la cabecera y una flecha a la derecha.
+        self.assertIn('class="plegable-tap" data-plegable=', pagina)
+        self.assertIn('class="chevron"', pagina)
+        self.assertIn(".section-acciones", pagina)
+        # Y el JS sabe plegar y desplegar (y desplegar al navegar por un KPI).
+        self.assertIn("prepararPlegables()", pagina)
+        self.assertIn("function plegar(seccion, abierta)", pagina)
+        self.assertIn("desplegar(destino)", pagina)
+        # "Para ti" es la única que arranca abierta.
+        self.assertIn('data-plegable="para-ti" data-abierto="1"', pagina)
+
+    def test_la_ficha_muestra_la_coleccion_bajo_la_sinopsis(self):
+        pagina = self._generar_con_fixture()
+        # La colección va en su propio bloque, debajo de la sinopsis.
+        self.assertIn('id="ficha-coleccion"', pagina)
+        self.assertIn("ficha-coleccion", pagina)
+        # Y la nota ya no se repite bajo el póster.
+        self.assertNotIn('id="ficha-nota"', pagina)
+        # La meta de la ficha sigue llevándola.
+        self.assertIn("'Tu nota: ' + f.nota", pagina)
+
+    def test_actores_tiene_las_cifras_centradas(self):
+        pagina = self._generar_con_fixture()
+        inicio = pagina.index('id="tabla-actores"')
+        bloque = pagina[inicio:pagina.index("</table>", inicio)]
+        self.assertIn('class="c-num" data-label="Títulos"', bloque)
+        self.assertIn('class="c-num" data-label="Media"', bloque)
+
+    def test_mi_perfil_las_filas_miden_como_tus_favoritas(self):
+        pagina = self._generar_con_fixture()
+        # Cada item mide 42 px, como una fila de "Tus favoritas".
+        self.assertIn("font-size: 13px; height: 42px; }", pagina)
+        # Y el subtítulo va en su propio elemento para que quede alineado.
+        self.assertIn("perfil-alto-titulo", pagina)
+        self.assertIn("perfil-alto-faceta", pagina)
 
 
 if __name__ == "__main__":

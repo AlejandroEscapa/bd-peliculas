@@ -74,13 +74,29 @@ font-size: 13px; transition: color .15s ease, transform .15s ease; }
 .kpi:hover .kpi-ir { color: var(--accent); transform: translateX(2px); }
 section { position: relative; background: var(--card); border-radius: var(--radius);
 padding: 16px; margin-bottom: 14px; container-type: inline-size; }
-section h2 { font-size: clamp(18px, 3vw, 21px); letter-spacing: -0.01em;
-margin-bottom: 4px; }
-section .hint { color: var(--sub); font-size: 13px; margin-bottom: 14px; }
-.section-head { display: flex; align-items: flex-start; justify-content: space-between;
-gap: 10px; margin-bottom: 14px; }
-.section-head > div:first-child { min-width: 0; }
-.section-head .hint { margin-bottom: 0; }
+section h2 { font-size: clamp(18px, 3vw, 21px); letter-spacing: -0.01em; }
+section .hint { color: var(--sub); font-size: 13px; }
+/* Cabecera de sección: además de explicar, es el mando de plegar. El botón
+   transparente cubre toda la cabecera (clic en el título, en la descripción
+   o en la flecha) y la flecha de la derecha gira al desplegar. */
+.section-head { position: relative; display: flex; align-items: center; gap: 14px;
+margin-bottom: 14px; min-height: 44px; }
+.section-head h2 { flex: 0 0 auto; }
+.section-head .hint { flex: 1 1 auto; min-width: 0; margin: 0; white-space: nowrap;
+overflow: hidden; text-overflow: ellipsis; }
+.section-acciones { flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
+position: relative; z-index: 3; pointer-events: none; }
+.section-acciones .filtro-wrap { pointer-events: auto; }
+.plegable-tap { position: absolute; inset: 0; z-index: 1; border: 0; padding: 0;
+background: none; cursor: pointer; border-radius: 14px; }
+.plegable-tap:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.section-head h2, .section-head .hint { position: relative; z-index: 2;
+pointer-events: none; }
+.chevron { display: inline-flex; color: var(--sub); pointer-events: none;
+transform: rotate(180deg); transition: transform .2s ease, color .15s ease; }
+.chevron svg { width: 20px; height: 20px; }
+section.plegada .chevron { transform: rotate(0deg); }
+section.plegada .section-cuerpo { display: none; }
 table { width: 100%; border-collapse: collapse; font-size: 14px;
 table-layout: fixed; }
 th { text-align: left; color: var(--sub); font-weight: 600; font-size: 11px;
@@ -166,8 +182,12 @@ text-transform: uppercase; letter-spacing: 0.06em; color: var(--sub);
 margin-bottom: 4px; }
 .ficha-sinopsis { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
 .ficha-sinopsis .leer-mas { display: none; }
-.saga { display: grid; gap: 6px; }
-.saga-nombre { font-size: 13px; color: var(--sub); }
+/* La colección va debajo de la sinopsis, a todo el ancho: las partes son
+   tarjetas en rejilla y no una columna estrecha. */
+.ficha-coleccion { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.saga { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+gap: 8px; }
+.saga-nombre { grid-column: 1 / -1; font-size: 13px; color: var(--sub); }
 .saga-item { display: flex; justify-content: space-between; gap: 12px; align-items: baseline;
 width: 100%; text-align: left; padding: 8px 10px; border: 1px solid var(--line);
 border-radius: 10px; background: var(--bg); color: var(--ink); cursor: pointer;
@@ -183,10 +203,10 @@ border-radius: 14px; padding: 14px 16px; margin-bottom: 8px; background: var(--b
 .tabla-tarjeta td { display: block; border: 0; padding: 0; }
 .tabla-tarjeta .celda-tarjeta { display: block; }
 .tarjeta-titulo { font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
-margin-bottom: 10px; }
+margin-bottom: 10px; text-align: center; }
 .tarjeta-titulo .nw { white-space: normal; }
 .tarjeta-datos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-gap: 4px 12px; }
+gap: 4px 12px; margin-top: 18px; }
 .dato-label { display: block; font-size: 10.5px; text-transform: uppercase;
 letter-spacing: 0.07em; color: var(--sub); margin-bottom: 2px; text-align: center; }
 .dato-valor { display: block; font-size: 15px; font-variant-numeric: tabular-nums;
@@ -198,11 +218,16 @@ text-align: center; }
 white-space: nowrap; }
 .perfil-caja { display: grid; gap: 8px; align-content: start; }
 .perfil-caja b { font-size: 13px; }
+/* Cada item mide lo mismo que una fila de "Tus favoritas" (42 px): así las
+   dos listas tienen la misma respiración y los subtítulos caen alineados. */
 .perfil-alto-item, .perfil-bajo-item { display: grid;
 grid-template-columns: minmax(0, 1fr) 90px 42px; gap: 10px; align-items: center;
-font-size: 13px; }
+font-size: 13px; height: 42px; }
 .perfil-alto-nombre, .perfil-bajo-nombre { display: grid; min-width: 0; }
-.perfil-alto-faceta, .perfil-bajo-faceta { color: var(--sub); font-size: 11px; }
+.perfil-alto-titulo, .perfil-bajo-titulo { white-space: nowrap; overflow: hidden;
+text-overflow: ellipsis; }
+.perfil-alto-faceta, .perfil-bajo-faceta { color: var(--sub); font-size: 11px;
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .perfil-alto-barra, .perfil-bajo-barra { height: 8px; border-radius: 99px;
 background: var(--line); overflow: hidden; }
 .perfil-alto-barra i { display: block; height: 100%; background: var(--accent);
@@ -317,6 +342,10 @@ color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; min-he
     align-items: flex-start; height: auto; min-height: 4.6em; }
   .tabla-cards td.c-razon::before { display: block; margin-bottom: 4px; }
   .tabla-cards td.c-razon .motivo-sec { margin-top: 2px; }
+  /* En móvil la cabecera se parte: el título con la flecha arriba y la
+     descripción debajo, ocupando todo el ancho. */
+  .section-head { flex-wrap: wrap; gap: 2px 12px; }
+  .section-head .hint { flex: 1 0 100%; white-space: normal; }
   .filtro-panel { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
     top: auto; width: auto; max-height: 60dvh; }
   .overlay { padding: 0; }
@@ -424,25 +453,68 @@ def boton_filtro(id_seccion: str, etiqueta: str, disabled: bool = False) -> str:
         f'aria-label="Filtros de {etiqueta_html}" hidden></div></div>')
 
 
-def cabecera_simple(id_seccion: str, titulo: str, hint: str) -> str:
-    """Cabecera de sección sin filtros: es información, no un control."""
+ICONO_FLECHA = (
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+    'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" '
+    'aria-hidden="true" focusable="false">'
+    '<path d="M6 9.5l6 6 6-6"/></svg>')
+
+
+def boton_plegar(id_seccion: str, titulo: str) -> str:
+    """Zona de clic de la cabecera: es el mando de plegar la sección.
+
+    El botón es transparente y cubre toda la cabecera (título, descripción y
+    flecha): así se pliega con un clic en cualquiera de los tres, y con el
+    teclado (Enter o Espacio) porque es un botón de verdad.
+    """
     id_html = html.escape(id_seccion, quote=True)
+    titulo_html = html.escape(titulo, quote=True)
     return (
-        '<div class="section-head"><div>'
+        f'<button type="button" class="plegable-tap" data-plegable="{id_html}" '
+        f'aria-expanded="false" aria-controls="cuerpo-{id_html}" '
+        f'aria-label="Desplegar {titulo_html}"></button>')
+
+
+FLECHA = ('<span class="chevron" aria-hidden="true">'
+          f'{ICONO_FLECHA}</span>')
+
+
+def cabecera_simple(id_seccion: str, titulo: str, hint: str,
+                    plegable: bool = True) -> str:
+    """Cabecera de sección sin filtros: es información, no un control.
+
+    Aun así se pliega: el botón transparente y la flecha son el mando.
+    """
+    id_html = html.escape(id_seccion, quote=True)
+    mando = boton_plegar(id_seccion, titulo) if plegable else ""
+    flecha = FLECHA if plegable else ""
+    return (
+        '<div class="section-head">'
+        f'{mando}'
         f'<h2 id="titulo-{id_html}" tabindex="-1">{html.escape(titulo)}</h2>'
-        f'<p class="hint">{html.escape(hint)}</p></div></div>')
+        f'<p class="hint" title="{html.escape(hint, quote=True)}">'
+        f'{html.escape(hint)}</p>'
+        f'<div class="section-acciones">{flecha}</div>'
+        '</div>')
 
 
 def cabecera_seccion(id_seccion: str, titulo: str, hint: str,
-                    disabled: bool = False) -> str:
-    """Cabecera con título, pista, botón de filtro y chips activos."""
+                    disabled: bool = False, plegable: bool = True) -> str:
+    """Cabecera con título, pista, botón de filtro, chips y flecha de plegar."""
     id_html = html.escape(id_seccion, quote=True)
     titulo_html = html.escape(titulo)
+    mando = boton_plegar(id_seccion, titulo) if plegable else ""
+    flecha = FLECHA if plegable else ""
     return (
-        '<div class="section-head"><div>'
+        '<div class="section-head">'
+        f'{mando}'
         f'<h2 id="titulo-{id_html}" tabindex="-1">{titulo_html}</h2>'
-        f'<p class="hint">{html.escape(hint)}</p></div>'
-        f'{boton_filtro(id_seccion, titulo, disabled)}</div>'
+        f'<p class="hint" title="{html.escape(hint, quote=True)}">'
+        f'{html.escape(hint)}</p>'
+        '<div class="section-acciones">'
+        f'{boton_filtro(id_seccion, titulo, disabled)}'
+        f'{flecha}'
+        '</div></div>'
         f'<div class="chips" id="chips-{id_html}" aria-live="polite" hidden></div>')
 
 
@@ -634,7 +706,7 @@ def generar(db_path: Path) -> str:
             + '</div>')
     posters_head = cabecera_seccion(
         "posters", "Tus favoritas, en cartel",
-        "Top 10 por tu nota. Pulsa una para abrir la ficha.")
+        "Top 10 por tu nota. Pulsa una para abrir la ficha.", plegable=False)
     top_head = cabecera_seccion(
         "top", "Tus favoritas", "Ordenadas por tu nota. 15 visibles, carga 15 más.")
     joyas_head = cabecera_seccion(
@@ -692,10 +764,12 @@ def generar(db_path: Path) -> str:
             clases=["c-txt", "c-num", "c-num"])
     actor_rows = "".join(
         fila_tabla([e(r["actor"]), str(r["titulos"]), str(r["media"])],
-                   etiquetas=ETIQUETAS_TABLA["actores"])
+                   etiquetas=ETIQUETAS_TABLA["actores"],
+                   clases=["c-txt", "c-num", "c-num"])
         for r in actores) or fila_tabla(
             ["Sin reparto suficiente aún", "", ""],
-            etiquetas=ETIQUETAS_TABLA["actores"])
+            etiquetas=ETIQUETAS_TABLA["actores"],
+            clases=["c-txt", "c-num", "c-num"])
     joya_rows = "".join(
         fila_tabla([f'<span class="pill">{r["my_rating"]}</span>',
                     f'<span class="nw">{e(r["title_es"] or r["original_title"] or "")}'
@@ -765,7 +839,7 @@ def generar(db_path: Path) -> str:
     para_ti_html = ""
     if para_ti_rows:
         para_ti_html = (
-            '<section id="seccion-para-ti" aria-labelledby="titulo-para-ti">'
+            '<section id="seccion-para-ti" aria-labelledby="titulo-para-ti" data-plegable="para-ti" data-abierto="1">'
             f'{para_ti_head}'
             '<table class="paginada tabla-cards" id="tabla-para-ti" '
             'data-seccion="para-ti" data-abre-ficha>'
@@ -785,7 +859,8 @@ def generar(db_path: Path) -> str:
                 ancho = min(100, int(abs(it["lift"]) * 22))
                 partes.append(
                     f'<div class="{clase}-item">'
-                    f'<span class="{clase}-nombre">{e(it["valor"])}'
+                    f'<span class="{clase}-nombre">'
+                    f'<span class="{clase}-titulo">{e(it["valor"])}</span>'
                     f'<span class="{clase}-faceta">{e(it["faceta"])}'
                     f' · {it["n"]} títulos</span></span>'
                     f'<span class="{clase}-barra"><i style="width:{ancho}%"></i></span>'
@@ -793,11 +868,14 @@ def generar(db_path: Path) -> str:
             return "".join(partes)
 
         perfil_html = (
-            '<section id="seccion-perfil" aria-labelledby="titulo-perfil">'
-            '<div class="section-head"><div><h2 id="titulo-perfil" tabindex="-1">'
-            'Mi perfil</h2><p class="hint">Tu gusto, medido: cuanto te sale cada '
+            '<section id="seccion-perfil" aria-labelledby="titulo-perfil" data-plegable="perfil">'
+            '<div class="section-head">'
+            f'{boton_plegar("perfil", "Mi perfil")}'
+            '<h2 id="titulo-perfil" tabindex="-1">Mi perfil</h2>'
+            '<p class="hint">Tu gusto, medido: cuanto te sale cada '
             f'cosa frente a tu media ({perfil_resumen["media_global"]}), '
-            f'sobre {perfil_resumen["n_valoradas"]} títulos valorados.</p></div></div>'
+            f'sobre {perfil_resumen["n_valoradas"]} títulos valorados.</p>'
+            f'<div class="section-acciones">{FLECHA}</div></div>'
             '<div class="grid2">'
             f'<div class="perfil-caja"><b>Te sale alto</b>'
             f'{_perfil_items(perfil_resumen["alto"], "perfil-alto")}</div>'
@@ -1551,11 +1629,60 @@ def generar(db_path: Path) -> str:
   /* Los KPI no filtran: solo llevan a la seccion que explica el numero. */
   function navegarA(destino) {
     if (!destino) return;
+    /* Si la sección está plegada, se despliega: si no, el KPI apuntaría a
+       una tira de título sin contenido. */
+    desplegar(destino);
     const reduce = typeof window.matchMedia === 'function'
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     destino.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
     const titulo = destino.querySelector('h2');
     if (titulo) titulo.focus();
+  }
+
+  /* --- Secciones plegables -------------------------------------------
+     Cada sección (menos las pills) se puede plegar: la cabecera (título,
+     descripción y flecha) es el mando. "Para ti" empieza abierta; el
+     resto, plegadas. */
+  function plegar(seccion, abierta) {
+    if (!seccion) return;
+    seccion.classList.toggle('plegada', !abierta);
+    const btn = seccion.querySelector('.plegable-tap');
+    if (btn) {
+      btn.setAttribute('aria-expanded', abierta ? 'true' : 'false');
+      const h2 = seccion.querySelector('h2');
+      const nombre = h2 ? h2.textContent : 'sección';
+      btn.setAttribute('aria-label', (abierta ? 'Plegar ' : 'Desplegar ') + nombre);
+    }
+  }
+  function desplegar(seccion) {
+    if (!seccion || !seccion.classList.contains('plegada')) return;
+    plegar(seccion, true);
+  }
+  function prepararPlegables() {
+    document.querySelectorAll('section[data-plegable]').forEach((seccion) => {
+      const id = seccion.dataset.plegable;
+      const head = seccion.querySelector('.section-head');
+      const chips = seccion.querySelector('.chips');
+      /* Todo lo que no es cabecera pasa a un cuerpo plegable. */
+      const cuerpo = document.createElement('div');
+      cuerpo.className = 'section-cuerpo';
+      cuerpo.id = 'cuerpo-' + id;
+      if (chips) cuerpo.appendChild(chips);
+      [...seccion.children].forEach((el) => {
+        if (el === head || el === chips) return;
+        cuerpo.appendChild(el);
+      });
+      seccion.appendChild(cuerpo);
+      plegar(seccion, seccion.dataset.abierto === '1');
+      const btn = seccion.querySelector('.plegable-tap');
+      if (btn) {
+        btn.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          plegar(seccion, seccion.classList.contains('plegada'));
+        });
+      }
+    });
   }
 
   function abrirPanelFiltro(id) {
@@ -1656,13 +1783,6 @@ def generar(db_path: Path) -> str:
       fallback.hidden = false;
       fallback.textContent = iniciales(f.titulo);
     }
-    const nota = q('#ficha-nota');
-    if (f.nota != null) {
-      nota.textContent = f.nota;
-      nota.hidden = false;
-    } else {
-      nota.hidden = true;
-    }
     const imdb = q('#ficha-imdb');
     if (f.url) {
       imdb.href = f.url;
@@ -1689,13 +1809,13 @@ def generar(db_path: Path) -> str:
     pasa('Géneros', (f.generos || []).join(', '));
     pasa('Países', (f.paises || []).join(', '));
     // Saga: las partes de la colección que tienes tú, por año y con tu nota.
+    // Va debajo de la sinopsis y ocupa todo el ancho de la ficha.
     const col = f.coleccion;
+    const coleccion = q('#ficha-coleccion');
+    coleccion.hidden = true;
     if (col && (col.partes || []).length) {
-      const b = document.createElement('div');
-      b.className = 'bloque';
-      const cab = document.createElement('b');
-      cab.textContent = 'Colección';
-      b.appendChild(cab);
+      const b = document.createElement('b');
+      b.textContent = 'Colección';
       const cont = document.createElement('div');
       cont.className = 'saga';
       const nombre = document.createElement('div');
@@ -1719,8 +1839,8 @@ def generar(db_path: Path) -> str:
         item.addEventListener('click', () => abrirFicha(p.tt));
         cont.appendChild(item);
       });
-      b.appendChild(cont);
-      bloques.appendChild(b);
+      coleccion.replaceChildren(b, cont);
+      coleccion.hidden = false;
     }
     const sinopsis = q('#ficha-sinopsis-texto');
     sinopsis.textContent = f.sinopsis || 'Sin sinopsis disponible todavía.';
@@ -1877,6 +1997,7 @@ def generar(db_path: Path) -> str:
     });
   });
   cargarSesion();
+  prepararPlegables();
   if (qInput && estadoFiltros.lista.q) qInput.value = estadoFiltros.lista.q;
   Object.keys(SECCIONES).forEach((id) => {
     const conf = SECCIONES[id];
@@ -1913,30 +2034,30 @@ def generar(db_path: Path) -> str:
 {posters_html}
 {para_ti_html}
 {perfil_html}
-<section id="seccion-top" aria-labelledby="titulo-top">{top_head}
+<section id="seccion-top" aria-labelledby="titulo-top" data-plegable="top">{top_head}
 <table class="paginada tabla-cards" id="tabla-top" data-seccion="top"><colgroup><col style="width:92px"><col><col style="width:150px"><col style="width:86px"></colgroup><thead><tr><th class="c-num">Tu nota</th><th class="c-titulo">Título</th><th class="c-centro">Tipo</th><th class="c-num">IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
 <div class="grid2">
-<section id="seccion-joyas" aria-labelledby="titulo-joyas">{joyas_head}
+<section id="seccion-joyas" aria-labelledby="titulo-joyas" data-plegable="joyas">{joyas_head}
 <table class="paginada tabla-tarjeta" id="tabla-joyas" data-seccion="joyas"><thead><tr><th class="c-num">Tú</th><th>Título</th><th class="c-num">IMDb</th><th class="c-num">Dif</th></tr></thead><tbody>{joya_rows}</tbody></table></section>
-<section id="seccion-decepciones" aria-labelledby="titulo-decepciones">{decep_head}
+<section id="seccion-decepciones" aria-labelledby="titulo-decepciones" data-plegable="decepciones">{decep_head}
 <table class="paginada tabla-tarjeta" id="tabla-decepciones" data-seccion="decepciones"><thead><tr><th class="c-num">Tú</th><th>Título</th><th class="c-num">IMDb</th><th class="c-num">Dif</th></tr></thead><tbody>{decep_rows}</tbody></table></section>
 </div>
 <div class="grid2">
-<section id="seccion-generos" aria-labelledby="titulo-generos">{generos_head}
+<section id="seccion-generos" aria-labelledby="titulo-generos" data-plegable="generos">{generos_head}
 <table class="paginada" id="tabla-generos" data-seccion="generos"><colgroup><col><col style="width:96px"><col style="width:96px"></colgroup><thead><tr><th class="c-txt">Género</th><th class="c-num">Títulos</th><th class="c-num">Media</th></tr></thead><tbody>{gen_rows}</tbody></table></section>
-<section id="seccion-directores" aria-labelledby="titulo-directores">{directores_head}
+<section id="seccion-directores" aria-labelledby="titulo-directores" data-plegable="directores">{directores_head}
 <table class="paginada" id="tabla-directores" data-seccion="directores"><colgroup><col><col style="width:96px"><col style="width:96px"></colgroup><thead><tr><th class="c-txt">Director</th><th class="c-num">Títulos</th><th class="c-num">Media</th></tr></thead><tbody>{dir_rows}</tbody></table></section>
 </div>
 <div class="grid2">
-<section id="seccion-actores" aria-labelledby="titulo-actores">{actores_head}
+<section id="seccion-actores" aria-labelledby="titulo-actores" data-plegable="actores">{actores_head}
 <table class="paginada" id="tabla-actores" data-seccion="actores"><colgroup><col><col style="width:96px"><col style="width:96px"></colgroup><thead><tr><th class="c-txt">Actor</th><th class="c-num">Títulos</th><th class="c-num">Media</th></tr></thead><tbody>{actor_rows}</tbody></table></section>
-<section id="seccion-decadas" aria-labelledby="titulo-decadas">{decadas_head}
+<section id="seccion-decadas" aria-labelledby="titulo-decadas" data-plegable="decadas">{decadas_head}
 <table class="paginada" id="tabla-decadas" data-seccion="decadas"><colgroup><col><col style="width:96px"><col style="width:110px"></colgroup><thead><tr><th class="c-txt">Década</th><th class="c-num">Títulos</th><th class="c-num">Media IMDb</th></tr></thead><tbody>{dec_rows}</tbody></table></section>
 </div>
-<section id="lista" aria-labelledby="titulo-lista">{lista_head}
+<section id="lista" aria-labelledby="titulo-lista" data-plegable="lista">{lista_head}
 <input class="search" id="q" type="search" placeholder="Filtra por título o género…" aria-label="Filtrar lista completa">
 <table class="paginada tabla-cards" id="tabla-todas" data-seccion="lista"><colgroup><col><col style="width:150px"><col style="width:72px"><col><col style="width:78px"><col style="width:104px"></colgroup><thead><tr><th class="c-titulo">Título</th><th class="c-centro">Tipo</th><th class="c-num">Año</th><th class="c-txt">Géneros</th><th class="c-num">IMDb</th><th class="c-num">Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
-<section id="seccion-seguimiento" aria-labelledby="titulo-seguimiento">{seguimiento_head}
+<section id="seccion-seguimiento" aria-labelledby="titulo-seguimiento" data-plegable="seguimiento">{seguimiento_head}
 <table class="paginada tabla-cards" id="tabla-seguimiento" data-seccion="seguimiento"><colgroup><col><col style="width:150px"><col style="width:86px"></colgroup><thead><tr><th class="c-titulo">Título</th><th class="c-centro">Tipo</th><th class="c-num">IMDb</th></tr></thead><tbody>{pend_rows}</tbody></table></section>
 <div class="overlay" id="overlay" hidden><div class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
 <button class="ficha-cerrar" id="ficha-cerrar" aria-label="Cerrar ficha">×</button>
@@ -1946,7 +2067,6 @@ def generar(db_path: Path) -> str:
     <div class="ficha-lateral">
       <img class="poster" id="ficha-poster" alt="" loading="lazy">
       <span class="poster-fallback" id="ficha-poster-fallback" aria-hidden="true"></span>
-      <span class="pill" id="ficha-nota"></span>
       <a id="ficha-imdb" target="_blank" rel="noopener">Ver en IMDb</a>
     </div>
     <div class="ficha-datos">
@@ -1961,6 +2081,7 @@ def generar(db_path: Path) -> str:
     <button type="button" class="leer-mas" id="ficha-leer-mas"
             aria-expanded="false">Leer más</button>
   </div>
+  <div class="bloque ancho-completo" id="ficha-coleccion" hidden></div>
 </template>
 <footer>Generado desde tu base local · auto-regenerable con scripts/auto_vista.py</footer>
 <script type="application/json" id="catalogo-data">{catalogo_json}</script>

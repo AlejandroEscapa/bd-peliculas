@@ -119,6 +119,13 @@ todo el ancho: si no cabe, se recorta con puntos suspensivos y el texto
 reserva el hueco del motivo más largo (dos líneas) más la línea del botón
 "+N más", así que la tabla se lee como una lista y el botón nunca se solapa.
 
+**Las secciones se pliegan.** Todas menos el strip de pósters ("Tus favoritas,
+en cartel", que siempre está visible). Plegada, una sección es una tira con el
+título, una descripción corta y la flecha de la derecha; el clic en cualquiera
+de los tres la despliega (también con Enter o Espacio, porque el mando es un
+botón real). "Para ti" arranca abierta; el resto, plegadas. Si un KPI lleva a
+una sección plegada, esta se despliega antes de llevarte allí.
+
 ## Publicar sin pisar
 
 `preview/dashboard.html` es un artefacto commiteado. Regenerarlo desde una base
