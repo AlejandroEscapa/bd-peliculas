@@ -44,6 +44,8 @@ METRICAS = (
     ("con_poster", "con póster"),
     ("con_reparto", "con reparto"),
     ("con_generos", "con géneros"),
+    ("directores", "directores distintos"),
+    ("actores", "actores distintos"),
 )
 
 
@@ -57,6 +59,8 @@ def metricas_de(snapshot: Path) -> dict:
     if not m:
         return {}
     data = json.loads(m.group(1))
+    actores = {a["nombre"] for f in data.values() for a in (f.get("reparto") or [])}
+    directores = {d for f in data.values() for d in (f.get("directores") or [])}
     return {
         "titulos": len(data),
         "valoradas": sum(1 for f in data.values() if f.get("nota") is not None),
@@ -64,6 +68,8 @@ def metricas_de(snapshot: Path) -> dict:
         "con_poster": sum(1 for f in data.values() if f.get("poster")),
         "con_reparto": sum(1 for f in data.values() if f.get("reparto")),
         "con_generos": sum(1 for f in data.values() if f.get("generos")),
+        "directores": len(directores),
+        "actores": len(actores),
         "recomendaciones": _contar_recomendaciones(html),
     }
 
