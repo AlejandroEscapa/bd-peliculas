@@ -238,6 +238,20 @@ class TestVistaHtml(unittest.TestCase):
         pagina = self._generar_con_fixture()
         self.assertNotIn('id="seccion-para-ti"', pagina)
 
+    def test_seccion_mi_perfil(self):
+        pagina = self._generar_con_motor()
+        self.assertIn('id="seccion-perfil"', pagina)
+        self.assertIn("Mi perfil", pagina)
+        self.assertIn("Te sale alto", pagina)
+        self.assertIn("Te sale flojo", pagina)
+        # Cada línea dice cuántas notas hay detrás: el lift sin evidencia engaña.
+        self.assertIn("títulos</span>", pagina)
+        self.assertIn("perfil-alto-item", pagina)
+
+    def test_seccion_mi_perfil_no_aparece_sin_valoradas(self):
+        pagina = self._generar_con_fixture()
+        self.assertNotIn('id="seccion-perfil"', pagina)
+
     def test_coleccion_en_el_catalogo_json(self):
         pagina = self._generar_con_colecciones("tt0111161", "tt0068646")
         self.assertIn('"coleccion"', pagina)

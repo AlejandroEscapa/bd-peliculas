@@ -282,6 +282,42 @@ class TestMotor(unittest.TestCase):
         p = perfil(self.conn, min_muestras=3)
         self.assertNotIn("Comedia", p["facetas"]["genero"])
 
+    # ------------------------------------------------------------- resumen
+
+    def test_resumen_perfil_ordena_por_evidencia_no_por_lift_crudo(self):
+        """Un lift enorme con 2 títulos no puede superar a uno con 17."""
+        from src.motor import resumen_perfil
+        r = resumen_perfil(self.conn, maximo=5)
+        self.assertEqual(r["n_valoradas"], 8)
+        self.assertEqual(r["media_global"], 7.5)
+        # Terror: lift +1.0 con 2 muestras. Paula Soto: -2.0 con 2. Crimen
+        # no aparece (lift +0.4, por debajo del umbral).
+        valores = [i["valor"] for i in r["alto"]]
+        self.assertIn("Terror", valores)
+        self.assertNotIn("Crimen", valores)
+        bajos = [i["valor"] for i in r["bajo"]]
+        self.assertIn("Comedia", bajos)
+
+    def test_resumen_perfil_devuelve_las_muestras_de_cada_faceta(self):
+        from src.motor import resumen_perfil
+        r = resumen_perfil(self.conn, maximo=5)
+        for item in r["alto"] + r["bajo"]:
+            self.assertIn("n", item)
+            self.assertGreaterEqual(item["n"], 2)
+            self.assertIn(item["faceta"], ("género", "director", "actor"))
+
+    def test_resumen_perfil_vacio_sin_valoradas(self):
+        from src.motor import resumen_perfil
+        conn = get_connection(self.db_path)
+        try:
+            conn.execute("UPDATE user_state SET my_rating = NULL")
+            conn.commit()
+            r = resumen_perfil(conn)
+            self.assertEqual(r["n_valoradas"], 0)
+            self.assertEqual(r["alto"], [])
+        finally:
+            conn.close()
+
 
 if __name__ == "__main__":
     unittest.main()

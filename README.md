@@ -94,10 +94,26 @@ En Linux o macOS, cambia `set` por `export` y `start` por `open`. Sin `OMDB_API_
 | `python scripts/derivar_relaciones.py` | Deduce relaciones de saga desde las colecciones |
 | `python scripts/recomendar.py` | Ordena tus pendientes por encaje y explica el porqué |
 | `python scripts/semilla.py` | Crea `data/semilla.db`: base de trabajo con notas sintéticas |
+| `python scripts/publicar.py` | Regenera el snapshot **sin perder datos** y lo commitea |
 | `python scripts/generar_vista.py` | Regenera `preview/dashboard.html` |
 | `python scripts/auto_vista.py --una-vez` | Regenera el panel una vez; sin `--una-vez`, vigila la BD |
 | `python scripts/backup.py` | Vuelca la base a SQL + manifiesto JSON |
 | `python -m unittest discover -s tests` | Suite completa |
+
+## Publicar sin pisar
+
+`preview/dashboard.html` es un artefacto commiteado. Regenerarlo desde una base
+a medias publicaría un panel más pobre sin avisar, así que el paso va por
+`scripts/publicar.py`:
+
+```bash
+python scripts/publicar.py --dry-run   # compara y enseña, no toca nada
+python scripts/publicar.py             # backup, genera, compara, commitea
+```
+
+Copia la base antes (`backups/`), genera a un fichero temporal, y **solo** deja
+el resultado en su sitio si no pierde títulos, valoradas, sinopsis, pósteres ni
+reparto. Si pierde algo, sale con código 3 y no toca nada.
 
 ## Decisiones de diseño
 

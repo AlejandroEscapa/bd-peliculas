@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 
 from src.db import DEFAULT_DB_PATH, init_db
 from src.huecos import listar_huecos
+from src.respaldo import backup
 from src.scraper import enriquecer
 
 
@@ -41,11 +42,19 @@ def main() -> int:
     ap.add_argument("--delay", type=float, default=1.5, help="Segundos entre peticiones")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--db", default=str(DEFAULT_DB_PATH))
+    ap.add_argument("--sin-backup", action="store_true",
+                    help="No copiar la base antes de enriquecerla")
     args = ap.parse_args()
 
     # Aplica el esquema vigente (idempotente): así una base de una versión
     # anterior gana las tablas nuevas sin necesitar un import previo.
     init_db(args.db)
+
+    # Copia de seguridad antes de tocar la base: el enriquecido solo rellena
+    # huecos, pero si algo va mal, esto es lo que te salva.
+    if not args.sin_backup:
+        manifiesto = backup(args.db, ROOT / "backups")
+        print(f"copia de seguridad: {manifiesto['dump']}")
 
     proveedor = cargar_proveedor(args.proveedor)
     tts = [args.tt] if args.tt else sorted({h["tt"] for h in listar_huecos(args.db)})

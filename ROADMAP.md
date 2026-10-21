@@ -5,6 +5,11 @@ Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, fic
 Tuberías conectadas (2026-10-20): colecciones de TMDB (`belongs_to_collection`, 0 peticiones extra) en `title_collections`, con relaciones saga derivadas en `title_relations`; `schema_version` ya se registra al aplicar el esquema. La ficha muestra el bloque "Colección" con las partes de tu catálogo, por año y con tu nota.
 Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
 
+## Publicar sin perder nada (2026-10-21)
+
+- `scripts/publicar.py` sustituye al `generar_vista.py` + `git commit` a mano: copia la base, genera a un temporal, **compara con el snapshot publicado** y solo lo sustituye si no pierde títulos, valoradas, sinopsis, pósteres ni reparto. Si pierde algo, sale con código 3 sin tocar nada.
+- El scraper también hace copia de seguridad antes de enriquecer (`--sin-backup` para saltarla).
+
 ## Base semilla (2026-10-21)
 
 - `scripts/semilla.py` construye `data/semilla.db` a partir del snapshot publicado: los mismos 207 títulos con **notas sintéticas** (deterministas, correlacionadas con el IMDb y con una preferencia por géneros) y las **sagas reales** detectadas por título. Sirve para iterar la interfaz sin la base real ni red, y para la demo pública en `/demo`.
@@ -196,14 +201,13 @@ para el spike y la beta.
 
 ## Ideas de interfaz (una por una, como pediste)
 
-Hechas: buscador Lista completa, Joyas/Decepciones ±1.5, Actores de confianza, buscador global + ficha overlay con sinopsis, strip de pósters, filtros por sección y orden, layout responsive, KPIs extra (Exigencia + Enriquecidos X/207), Notas por década (barras CSS), bloque "Colección" en la ficha con las partes de tu saga, sección "Para ti" (pendientes ordenados por encaje, cada uno con su porqué).
+Hechas: buscador Lista completa, Joyas/Decepciones ±1.5, Actores de confianza, buscador global + ficha overlay con sinopsis, strip de pósters, filtros por sección y orden, layout responsive, KPIs extra (Exigencia + Enriquecidos X/207), Notas por década (barras CSS), bloque "Colección" en la ficha con las partes de tu saga, sección "Para ti" (pendientes ordenados por encaje, cada uno con su porqué) y "Mi perfil" (tu gusto medido, con la evidencia a la vista).
 Descartadas por ahora, a debat si las quieres:
 
 - [ ] Últimas valoradas + Maratón corto (<110 min, 7+ IMDb).
 - [ ] Ruleta «Qué ver hoy» (3 pendientes 7.5+, determinista por día).
 - [ ] Mapa de países (con `title_countries`, barras CSS).
 - [ ] Tus guionistas favoritos (`title_credits` extra, ya descargado).
-- [ ] Mi perfil: lift por género/director/actor (tu media en la faceta − tu media global).
 
 ## Despliegue web
 

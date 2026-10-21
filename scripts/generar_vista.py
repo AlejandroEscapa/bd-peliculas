@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from src.db import DEFAULT_DB_PATH
-from src.motor import recomendar
+from src.motor import recomendar, resumen_perfil
 
 CSS = """
 :root { --bg: #f5f5f7; --card: #ffffff; --ink: #1d1d1f; --sub: #6e6e73;
@@ -130,6 +130,21 @@ min-height: 44px; }
 .encaje .bar { flex: 1 1 auto; min-width: 36px; }
 .encaje .n { color: var(--sub); font-size: 12px; font-variant-numeric: tabular-nums;
 white-space: nowrap; }
+.perfil-caja { display: grid; gap: 8px; align-content: start; }
+.perfil-caja b { font-size: 13px; }
+.perfil-alto-item, .perfil-bajo-item { display: grid;
+grid-template-columns: minmax(0, 1fr) 90px 42px; gap: 10px; align-items: center;
+font-size: 13px; }
+.perfil-alto-nombre, .perfil-bajo-nombre { display: grid; min-width: 0; }
+.perfil-alto-faceta, .perfil-bajo-faceta { color: var(--sub); font-size: 11px; }
+.perfil-alto-barra, .perfil-bajo-barra { height: 8px; border-radius: 99px;
+background: var(--line); overflow: hidden; }
+.perfil-alto-barra i { display: block; height: 100%; background: var(--accent);
+border-radius: 99px; }
+.perfil-bajo-barra i { display: block; height: 100%; background: var(--sub);
+border-radius: 99px; opacity: .55; }
+.perfil-alto-valor, .perfil-bajo-valor { text-align: right;
+font-variant-numeric: tabular-nums; font-size: 12px; color: var(--sub); }
 tr[data-tt] { cursor: pointer; }
 footer { color: var(--sub); font-size: 12px; text-align: center; margin-top: 26px; }
 .poster-section { padding: 16px; }
@@ -467,6 +482,7 @@ def generar(db_path: Path) -> str:
            ORDER BY c.collection_id, t.year, t.tt""").fetchall()
     # El motor calcula la cola de pendientes recomendada (con su porqué).
     recomendaciones = recomendar(c)
+    perfil_resumen = resumen_perfil(c)
     c.close()
 
     e = html.escape
@@ -605,6 +621,35 @@ def generar(db_path: Path) -> str:
             'data-seccion="para-ti" data-abre-ficha>'
             '<thead><tr><th>Título</th><th>Año</th><th>IMDb</th><th>Encaje</th>'
             f'<th>Por qué</th></tr></thead><tbody>{para_ti_rows}</tbody></table></section>')
+
+    # Mi perfil: tu gusto medido, con la evidencia (cuántos títulos) a la vista.
+    perfil_html = ""
+    if perfil_resumen["alto"] or perfil_resumen["bajo"]:
+        def _perfil_items(items, clase):
+            partes = []
+            for it in items:
+                ancho = min(100, int(abs(it["lift"]) * 22))
+                partes.append(
+                    f'<div class="{clase}-item">'
+                    f'<span class="{clase}-nombre">{e(it["valor"])}'
+                    f'<span class="{clase}-faceta">{e(it["faceta"])}'
+                    f' · {it["n"]} títulos</span></span>'
+                    f'<span class="{clase}-barra"><i style="width:{ancho}%"></i></span>'
+                    f'<span class="{clase}-valor">{it["lift"]:+.1f}</span></div>')
+            return "".join(partes)
+
+        perfil_html = (
+            '<section id="seccion-perfil" aria-labelledby="titulo-perfil">'
+            '<div class="section-head"><div><h2 id="titulo-perfil" tabindex="-1">'
+            'Mi perfil</h2><p class="hint">Tu gusto, medido: cuanto te sale cada '
+            f'cosa frente a tu media ({perfil_resumen["media_global"]}), '
+            f'sobre {perfil_resumen["n_valoradas"]} títulos valorados.</p></div></div>'
+            '<div class="grid2">'
+            f'<div class="perfil-caja"><b>Te sale alto</b>'
+            f'{_perfil_items(perfil_resumen["alto"], "perfil-alto")}</div>'
+            f'<div class="perfil-caja"><b>Te sale flojo</b>'
+            f'{_perfil_items(perfil_resumen["bajo"], "perfil-bajo")}</div>'
+            '</div></section>')
     cast_por_tt: dict[str, list[dict]] = {}
     for r in cast_rows:
         cast_por_tt.setdefault(r["tt"], []).append(
@@ -1609,6 +1654,7 @@ def generar(db_path: Path) -> str:
 {kpis}
 {posters_html}
 {para_ti_html}
+{perfil_html}
 <section id="seccion-top" aria-labelledby="titulo-top">{top_head}
 <table class="paginada tabla-cards" id="tabla-top" data-seccion="top"><thead><tr><th>Tu nota</th><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
 <div class="grid2">

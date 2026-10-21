@@ -61,6 +61,11 @@ UMBRAL_ANTIPROFIL = -1.0
 # frente a tu 7.5 global" en casi todas las filas, que no informa de nada.
 UMBRAL_LIFT = 0.5
 
+# Cuánta evidencia pesa un lift. Un director con 2 títulos y +1.9 no puede
+# pesar más que un género con 17 y +0.9: el lift se encoge por el tamaño de
+# la muestra (lift * n / (n + K)).
+PESO_EVIDENCIA = 4.0
+
 # Coseno mínimo para decir "se parece a", y al menos dos términos en común.
 # Los términos compartidos tienen que ser de contenido: la lista de stopwords
 # quita pronombres y verbos genéricos, que si no emparejaban cualquier cosa
@@ -483,6 +488,38 @@ def _elegir_motivos(puntos, maximo: int = 3) -> list[str]:
         claves.add(punto[2])
 
     return [p[3] for p in elegidos[:maximo]]
+
+
+def resumen_perfil(conn: sqlite3.Connection, maximo: int = 5,
+                    min_muestras: int = MIN_MUESTRAS) -> dict:
+    """Tu gusto, medido: qué facetas te salen por encima o por debajo de tu media.
+
+    El orden no es el lift crudo sino un lift "encogido" por la evidencia
+    (lift * n / (n + PESO_EVIDENCIA)): un director con dos títulos y un
+    +1.9 no puede pesar más que un género con diecisiete y un +0.9.
+    """
+    p = perfil(conn, min_muestras=min_muestras)
+    if not p["n_valoradas"]:
+        return {"media_global": 0.0, "n_valoradas": 0, "alto": [], "bajo": []}
+
+    items = []
+    for faceta in ("genero", "director", "actor"):
+        for valor, d in p["facetas"].get(faceta, {}).items():
+            if abs(d["lift"]) < UMBRAL_LIFT:
+                continue
+            items.append({
+                "faceta": ETIQUETAS.get(faceta, faceta),
+                "valor": valor,
+                "media": d["media"],
+                "lift": d["lift"],
+                "n": d["n"],
+                "peso": d["lift"] * d["n"] / (d["n"] + PESO_EVIDENCIA),
+            })
+
+    alto = sorted(items, key=lambda i: (-i["peso"], i["valor"]))[:maximo]
+    bajo = sorted(items, key=lambda i: (i["peso"], i["valor"]))[:maximo]
+    return {"media_global": p["global"], "n_valoradas": p["n_valoradas"],
+            "alto": alto, "bajo": bajo}
 
 
 def recomendar_desde_db(db_path: str | Path, limite: int | None = None) -> list[dict]:
