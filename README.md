@@ -100,6 +100,14 @@ En Linux o macOS, cambia `set` por `export` y `start` por `open`. Sin `OMDB_API_
 | `python scripts/backup.py` | Vuelca la base a SQL + manifiesto JSON |
 | `python -m unittest discover -s tests` | Suite completa |
 
+## Cómo está maquetado
+
+Un único fichero HTML, sin framework ni build, con un sistema de columnas
+consistente: las cifras van a la derecha con ancho fijo (`tabular-nums`) y
+nunca se parten, los títulos se recortan con elipsis y las secciones de
+información son listas simples. "Joyas" y "Decepciones" son tarjetas (título
+arriba, datos alineados debajo); el resto, tablas.
+
 ## Publicar sin pisar
 
 `preview/dashboard.html` es un artefacto commiteado. Regenerarlo desde una base

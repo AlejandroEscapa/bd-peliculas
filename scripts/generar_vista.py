@@ -30,7 +30,7 @@ CSS = """
 [hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body { font-family: -apple-system, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
-background: var(--bg); color: var(--ink); overflow-wrap: anywhere;
+background: var(--bg); color: var(--ink); overflow-wrap: break-word;
 padding: var(--sp) clamp(16px, 4vw, 24px) calc(64px + env(safe-area-inset-bottom)); }
 .wrap { max-width: 1120px; margin: 0 auto; }
 header h1 { font-size: clamp(28px, 6vw, 40px); letter-spacing: -0.02em; }
@@ -53,10 +53,13 @@ border: none; background: #fff; padding: 8px 10px; cursor: pointer; text-align: 
 .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
 gap: 10px; margin: 24px 0; }
 .kpi { position: relative; min-width: 0; background: var(--card);
-border-radius: var(--radius); padding: 14px 48px 14px 14px; }
-.kpi .n { font-size: clamp(26px, 6vw, 34px); font-weight: 700; letter-spacing: -0.02em; }
-.kpi .l { color: var(--sub); font-size: 12px; margin-top: 4px; line-height: 1.25; }
-.kpi .filtro-wrap { position: absolute; top: 4px; right: 4px; }
+border-radius: var(--radius); padding: 13px 40px 13px 13px;
+display: flex; flex-direction: column; justify-content: space-between; }
+.kpi .n { font-size: clamp(19px, 2.9vw, 24px); font-weight: 700; letter-spacing: -0.02em;
+white-space: nowrap; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.kpi .l { color: var(--sub); font-size: 11px; margin-top: 6px; line-height: 1.3;
+min-height: 2.6em; }
+.kpi .filtro-wrap { position: absolute; top: 2px; right: 2px; }
 section { position: relative; background: var(--card); border-radius: var(--radius);
 padding: 16px; margin-bottom: 14px; container-type: inline-size; }
 section h2 { font-size: clamp(18px, 3vw, 21px); letter-spacing: -0.01em;
@@ -66,20 +69,34 @@ section .hint { color: var(--sub); font-size: 13px; margin-bottom: 14px; }
 gap: 10px; margin-bottom: 14px; }
 .section-head > div:first-child { min-width: 0; }
 .section-head .hint { margin-bottom: 0; }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-th { text-align: left; color: var(--sub); font-weight: 500; font-size: 12px;
-text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 10px;
-border-bottom: 1px solid var(--line); }
-td { padding: 9px 10px; border-bottom: 1px solid var(--line); }
+table { width: 100%; border-collapse: collapse; font-size: 14px;
+table-layout: fixed; }
+th { text-align: left; color: var(--sub); font-weight: 600; font-size: 11px;
+text-transform: uppercase; letter-spacing: 0.07em; padding: 10px 12px;
+border-bottom: 1px solid var(--line); vertical-align: bottom; }
+td { padding: 11px 12px; border-bottom: 1px solid var(--line);
+vertical-align: top; }
 tr:last-child td { border-bottom: none; }
+tbody tr[data-tt]:hover td { background: var(--bg); }
+/* Tipos de columna: una cifra vive a la derecha, con cifras de ancho fijo
+   (tabular-nums), y nunca se parte. */
+.c-num { text-align: right; white-space: nowrap;
+font-variant-numeric: tabular-nums; }
+.c-titulo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-razon { color: var(--sub); font-size: 13px; line-height: 1.5; }
+.c-encaje { text-align: left; }
+.motivo { color: var(--ink); }
+.motivo-sec { display: block; color: var(--sub); font-size: 12px;
+line-height: 1.45; }
+.motivo-sec::before { content: "— "; color: var(--line); }
+.motivo-vacio { color: var(--sub); }
 .pill { display: inline-block; background: var(--accent); color: #fff;
 border-radius: 999px; padding: 2px 10px; font-weight: 600; font-size: 13px; }
-.bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden;
-min-width: 90px; }
+.bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
 .bar i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
 .grid2 { display: grid; grid-template-columns: 1fr; gap: var(--gap); }
 a { color: var(--accent); text-decoration: none; }
-td.t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 340px; }
+td.t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nw { white-space: nowrap; }
 .np { color: var(--sub); font-weight: 700; font-size: 12px; letter-spacing: 0.1em; }
 .more-wrap { display: flex; justify-content: center; padding-top: 14px; }
@@ -126,6 +143,21 @@ min-height: 44px; }
 .saga-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .saga-titulo { font-weight: 600; }
 .saga-meta { color: var(--sub); font-size: 12px; white-space: nowrap; }
+.tabla-tarjeta { table-layout: auto; }
+.tabla-tarjeta thead { display: none; }
+.tabla-tarjeta tr { display: block; border: 1px solid var(--line);
+border-radius: 14px; padding: 14px 16px; margin-bottom: 8px; background: var(--bg); }
+.tabla-tarjeta td { display: block; border: 0; padding: 0; }
+.tabla-tarjeta .celda-tarjeta { display: block; }
+.tarjeta-titulo { font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+margin-bottom: 10px; }
+.tarjeta-titulo .nw { white-space: normal; }
+.tarjeta-datos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+gap: 4px 12px; }
+.dato-label { display: block; font-size: 10.5px; text-transform: uppercase;
+letter-spacing: 0.07em; color: var(--sub); margin-bottom: 2px; }
+.dato-valor { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+.dato-valor .pill { font-size: 13px; }
 .encaje { display: flex; align-items: center; gap: 8px; }
 .encaje .bar { flex: 1 1 auto; min-width: 36px; }
 .encaje .n { color: var(--sub); font-size: 12px; font-variant-numeric: tabular-nums;
@@ -169,6 +201,10 @@ white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .filtro-btn { display: inline-flex; align-items: center; justify-content: center;
 width: 44px; height: 44px; padding: 0; position: relative; border: 1px solid var(--line);
 background: #fff; color: var(--ink); border-radius: 999px; cursor: pointer; }
+.kpi .filtro-btn { width: 32px; height: 32px; border-color: transparent;
+background: transparent; }
+.kpi .filtro-btn:hover { background: var(--bg); }
+.kpi .filtro-btn svg { width: 15px; height: 15px; }
 .filtro-btn:hover { background: var(--bg); }
 .filtro-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .filtro-btn[disabled] { opacity: .4; cursor: not-allowed; }
@@ -220,6 +256,12 @@ color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; min-he
   .tabla-cards td.t::before { display: none; }
   .tabla-cards .nw { white-space: normal; }
   .tabla-cards .bar { flex: 0 0 45%; }
+  .tabla-cards td.c-num { text-align: right; }
+  .tabla-cards td.c-num::before { margin-right: auto; }
+  .tabla-cards { table-layout: auto; }
+  .tabla-cards td.c-razon { display: block; }
+  .tabla-cards td.c-razon::before { display: block; margin-bottom: 4px; }
+  .tabla-cards td.c-razon .motivo-sec { margin-top: 2px; }
 }
 @media (max-width: 640px) {
   .tabla-cards thead { display: none; }
@@ -232,6 +274,10 @@ color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; min-he
   .tabla-cards td.t::before { display: none; }
   .tabla-cards .nw { white-space: normal; }
   .tabla-cards .bar { flex: 0 0 45%; }
+  .tabla-cards { table-layout: auto; }
+  .tabla-cards td.c-razon { display: block; }
+  .tabla-cards td.c-razon::before { display: block; margin-bottom: 4px; }
+  .tabla-cards td.c-razon .motivo-sec { margin-top: 2px; }
   .filtro-panel { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
     top: auto; width: auto; max-height: 60dvh; }
   .overlay { padding: 0; }
@@ -281,10 +327,10 @@ ETIQUETAS_TABLA = {
     "top": ["Tu nota", "Título", "Tipo", "IMDb"],
     "joyas": ["Tú", "Título", "IMDb", "Diferencia"],
     "decepciones": ["Tú", "Título", "IMDb", "Diferencia"],
-    "generos": ["Género", "Títulos", "Distribución", "Media"],
+    "generos": ["Género", "Títulos", "Media"],
     "directores": ["Director", "Títulos", "Media"],
     "actores": ["Actor", "Títulos", "Media"],
-    "decadas": ["Década", "Títulos", "Distribución", "Media IMDb"],
+    "decadas": ["Década", "Títulos", "Media IMDb"],
     "para-ti": ["Título", "Año", "IMDb", "Encaje", "Por qué"],
     "lista": ["Título", "Tipo", "Año", "Géneros", "IMDb", "Tu nota"],
     "seguimiento": ["Título", "Tipo", "IMDb"],
@@ -292,13 +338,24 @@ ETIQUETAS_TABLA = {
 
 
 def fila_tabla(celdas: list[str], cls_first: str | None = None,
-              etiquetas: list[str] | None = None) -> str:
-    """Fila con etiquetas por celda para el modo tarjeta en móvil."""
+              etiquetas: list[str] | None = None,
+              clases: list[str] | None = None) -> str:
+    """Fila con etiquetas por celda para el modo tarjeta en móvil.
+
+    `clases` da el tipo de cada columna (c-num, c-titulo, c-razon...): es lo
+    que alinea los números a la derecha y evita que un "2004" se parta en dos
+    líneas por un contenedor estrecho.
+    """
     partes = []
     for i, celda in enumerate(celdas):
         attrs = []
+        tipos = []
         if i == 0 and cls_first:
-            attrs.append(f'class="{cls_first}"')
+            tipos.append(cls_first)
+        if clases and i < len(clases) and clases[i]:
+            tipos.append(clases[i])
+        if tipos:
+            attrs.append(f'class="{" ".join(tipos)}"')
         if etiquetas and i < len(etiquetas):
             attrs.append(f'data-label="{html.escape(etiquetas[i], quote=True)}"')
         sufijo = (" " + " ".join(attrs)) if attrs else ""
@@ -326,6 +383,15 @@ def boton_filtro(id_seccion: str, etiqueta: str, disabled: bool = False) -> str:
         f'{ICONO_FILTRO}<span class="filtro-badge" hidden></span></button>'
         f'<div class="filtro-panel" id="filtro-{id_html}" role="dialog" '
         f'aria-label="Filtros de {etiqueta_html}" hidden></div></div>')
+
+
+def cabecera_simple(id_seccion: str, titulo: str, hint: str) -> str:
+    """Cabecera de sección sin filtros: es información, no un control."""
+    id_html = html.escape(id_seccion, quote=True)
+    return (
+        '<div class="section-head"><div>'
+        f'<h2 id="titulo-{id_html}" tabindex="-1">{html.escape(titulo)}</h2>'
+        f'<p class="hint">{html.escape(hint)}</p></div></div>')
 
 
 def cabecera_seccion(id_seccion: str, titulo: str, hint: str,
@@ -510,19 +576,18 @@ def generar(db_path: Path) -> str:
     decep_head = cabecera_seccion(
         "decepciones", "Decepciones",
         "IMDb te supera en 1.5+. 15 visibles, carga 15 más.")
-    generos_head = cabecera_seccion(
+    generos_head = cabecera_simple(
         "generos", "Géneros que más te gustan",
-        "Nota media de tus valoradas. 15 visibles, carga 15 más.", disabled=True)
-    directores_head = cabecera_seccion(
+        "Nota media de tus valoradas. 15 visibles, carga 15 más.")
+    directores_head = cabecera_simple(
         "directores", "Directores frecuentes",
-        "En tus títulos valorados. 15 visibles, carga 15 más.", disabled=True)
-    actores_head = cabecera_seccion(
+        "En tus títulos valorados. 15 visibles, carga 15 más.")
+    actores_head = cabecera_simple(
         "actores", "Actores de confianza",
-        "Tu nota media por actor (mínimo 2 títulos). 15 visibles, carga 15 más.",
-        disabled=True)
-    decadas_head = cabecera_seccion(
+        "Tu nota media por actor (mínimo 2 títulos). 15 visibles, carga 15 más.")
+    decadas_head = cabecera_simple(
         "decadas", "Notas por década",
-        "Títulos y nota media IMDb por década.", disabled=True)
+        "Títulos y nota media IMDb por década.")
     lista_head = cabecera_seccion(
         "lista", "Lista completa",
         f"Los {len(todas)} títulos. Filtra sin recargar. 15 visibles, carga 15 más.")
@@ -543,20 +608,21 @@ def generar(db_path: Path) -> str:
                     f'<span class="nw">{e(r["title_es"] or r["original_title"] or "")}'
                     f' <span style="color:var(--sub)">({r["year"] or "?"})</span></span>',
                     e(r["title_type"] or ""), str(r["imdb_rating"] or "-")],
-                   etiquetas=ETIQUETAS_TABLA["top"])
+                   etiquetas=ETIQUETAS_TABLA["top"],
+                   clases=["c-num", "c-titulo", "c-txt", "c-num"])
         for r in top)
-    max_g = max([r["titulos"] for r in generos] or [1])
     gen_rows = "".join(
-        fila_tabla([e(r["genero"]), str(r["titulos"]),
-                    f'<div class="bar"><i style="width:{100 * r["titulos"] // max_g}%"></i></div>',
-                    str(r["nota_media"])],
-                   etiquetas=ETIQUETAS_TABLA["generos"])
+        fila_tabla([e(r["genero"]), str(r["titulos"]), str(r["nota_media"])],
+                   etiquetas=ETIQUETAS_TABLA["generos"],
+                   clases=["c-txt", "c-num", "c-num"])
         for r in generos)
     dir_rows = "".join(
         fila_tabla([e(r["director"]), str(r["titulos"]), str(r["nota_media"])],
-                   etiquetas=ETIQUETAS_TABLA["directores"])
+                   etiquetas=ETIQUETAS_TABLA["directores"],
+                   clases=["c-txt", "c-num", "c-num"])
         for r in directores) or fila_tabla(
-            ["Sin datos aún", "", ""], etiquetas=ETIQUETAS_TABLA["directores"])
+            ["Sin datos aún", "", ""], etiquetas=ETIQUETAS_TABLA["directores"],
+            clases=["c-txt", "c-num", "c-num"])
     actor_rows = "".join(
         fila_tabla([e(r["actor"]), str(r["titulos"]), str(r["media"])],
                    etiquetas=ETIQUETAS_TABLA["actores"])
@@ -590,12 +656,21 @@ def generar(db_path: Path) -> str:
                   (f'<span class="pill">{r["my_rating"]}</span>'
                    if r["my_rating"] is not None else '<span class="np" title="No puntuado">NP</span>')]
         fila = fila_tabla(
-            celdas, cls_first="t", etiquetas=ETIQUETAS_TABLA["lista"]).replace(
+            celdas, cls_first="t", etiquetas=ETIQUETAS_TABLA["lista"],
+            clases=["c-titulo", "c-txt", "c-num", "c-txt", "c-num", "c-num"]).replace(
             "<tr>", f'<tr data-r="{clave}" data-tt="{e(r["tt"] if "tt" in r.keys() else "")}">', 1)
         todas_tr.append(fila)
     all_rows = "".join(todas_tr)
     ntotal = len(todas)
     # Cola recomendada: pendientes ordenados por encaje, con su porqué.
+    def _motivos(razones: list[str]) -> str:
+        """El primer motivo pesa; los demas son contexto y van apagados."""
+        if not razones:
+            return '<span class="motivo-vacio">Sin motivo</span>'
+        principal = f'<span class="motivo">{e(razones[0])}</span>'
+        resto = "".join(f'<span class="motivo-sec">{e(r)}</span>' for r in razones[1:])
+        return principal + resto
+
     para_ti_rows = "".join(
         fila_tabla([
             e(r["titulo"]),
@@ -604,14 +679,14 @@ def generar(db_path: Path) -> str:
             (f'<div class="encaje"><div class="bar">'
              f'<i style="width:{r["encaje"]}%"></i></div>'
              f'<span class="n">{r["encaje"]}%</span></div>'),
-            e(" · ".join(r["razones"])),
-        ], cls_first="t", etiquetas=ETIQUETAS_TABLA["para-ti"]).replace(
+            _motivos(r["razones"]),
+        ], cls_first="t", etiquetas=ETIQUETAS_TABLA["para-ti"],
+           clases=["c-titulo", "c-num", "c-num", "c-encaje", "c-razon"]).replace(
             "<tr>", f'<tr data-tt="{e(r["tt"])}">', 1)
         for r in recomendaciones)
-    para_ti_head = cabecera_seccion(
+    para_ti_head = cabecera_simple(
         "para-ti", "Para ti",
-        "Tus pendientes ordenados por lo que encaja contigo, y por qué.",
-        disabled=True)
+        "Tus pendientes ordenados por lo que encaja contigo, y por qué.")
     para_ti_html = ""
     if para_ti_rows:
         para_ti_html = (
@@ -619,8 +694,12 @@ def generar(db_path: Path) -> str:
             f'{para_ti_head}'
             '<table class="paginada tabla-cards" id="tabla-para-ti" '
             'data-seccion="para-ti" data-abre-ficha>'
-            '<thead><tr><th>Título</th><th>Año</th><th>IMDb</th><th>Encaje</th>'
-            f'<th>Por qué</th></tr></thead><tbody>{para_ti_rows}</tbody></table></section>')
+            '<colgroup><col><col style="width:76px"><col style="width:76px">'
+            '<col style="width:132px"><col></colgroup>'
+            '<thead><tr><th class="c-titulo">Título</th><th class="c-num">Año</th>'
+            '<th class="c-num">IMDb</th><th class="c-encaje">Encaje</th>'
+            f'<th class="c-razon">Por qué</th></tr></thead>'
+            f'<tbody>{para_ti_rows}</tbody></table></section>')
 
     # Mi perfil: tu gusto medido, con la evidencia (cuántos títulos) a la vista.
     perfil_html = ""
@@ -717,14 +796,13 @@ def generar(db_path: Path) -> str:
                    cls_first="t", etiquetas=ETIQUETAS_TABLA["seguimiento"])
         for r in pend)
 
-    max_d = max([r["titulos"] for r in decadas] or [1])
     dec_rows = "".join(
         fila_tabla([
             f'{int(r["decada"])}s',
             str(r["titulos"]),
-            f'<div class="bar"><i style="width:{100 * r["titulos"] // max_d}%"></i></div>',
             str(r["media"] or "-")
-        ], etiquetas=ETIQUETAS_TABLA["decadas"])
+        ], etiquetas=ETIQUETAS_TABLA["decadas"],
+            clases=["c-txt", "c-num", "c-num"])
         for r in decadas)
 
     js = """<script>
@@ -889,13 +967,13 @@ def generar(db_path: Path) -> str:
       ordenes: ['nota_desc', 'imdb_desc', 'titulo_asc', 'year_desc'], ordenDefecto: 'nota_desc'
     },
     joyas: {
-      tabla: 'tabla-joyas',
+      tabla: 'tabla-joyas', tarjeta: true,
       base: (f) => f.diferencia != null && f.diferencia >= 1.5, limite: 30,
       facetas: ['tipo', 'genero', 'decada', 'nota', 'imdb', 'diferencia', 'orden'],
       ordenes: ['diferencia_desc', 'nota_desc', 'titulo_asc'], ordenDefecto: 'diferencia_desc'
     },
     decepciones: {
-      tabla: 'tabla-decepciones',
+      tabla: 'tabla-decepciones', tarjeta: true,
       base: (f) => f.diferencia != null && f.diferencia <= -1.5, limite: 30,
       facetas: ['tipo', 'genero', 'decada', 'nota', 'imdb', 'diferencia', 'orden'],
       ordenes: ['diferencia_asc', 'nota_desc', 'titulo_asc'], ordenDefecto: 'diferencia_asc'
@@ -948,35 +1026,35 @@ def generar(db_path: Path) -> str:
   };
   const COLUMNAS = {
     top: [
-      { etiqueta: 'Tu nota', valor: (f) => pill(f.nota) },
-      { etiqueta: 'Título', clase: 't', valor: tituloCelda },
-      { etiqueta: 'Tipo', valor: (f) => f.tipo || '-' },
-      { etiqueta: 'IMDb', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) }
+      { etiqueta: 'Tu nota', clase: 'c-num', valor: (f) => pill(f.nota) },
+      { etiqueta: 'Título', clase: 't c-titulo', valor: tituloCelda },
+      { etiqueta: 'Tipo', clase: 'c-txt', valor: (f) => f.tipo || '-' },
+      { etiqueta: 'IMDb', clase: 'c-num', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) }
     ],
     joyas: [
-      { etiqueta: 'Tú', valor: (f) => pill(f.nota) },
-      { etiqueta: 'Título', clase: 't', valor: tituloCelda },
-      { etiqueta: 'IMDb', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) },
-      { etiqueta: 'Diferencia', valor: (f) => (f.diferencia > 0 ? '+' : '') + texto(f.diferencia) }
+      { etiqueta: 'Tu nota', clase: 'c-num', valor: (f) => pill(f.nota) },
+      { etiqueta: 'Título', clase: 't c-titulo', titulo: true, valor: tituloCelda },
+      { etiqueta: 'IMDb', clase: 'c-num', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) },
+      { etiqueta: 'Diferencia', clase: 'c-num', valor: (f) => (f.diferencia > 0 ? '+' : '') + texto(f.diferencia) }
     ],
     decepciones: [
-      { etiqueta: 'Tú', valor: (f) => pill(f.nota) },
-      { etiqueta: 'Título', clase: 't', valor: tituloCelda },
-      { etiqueta: 'IMDb', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) },
-      { etiqueta: 'Diferencia', valor: (f) => texto(f.diferencia) }
+      { etiqueta: 'Tu nota', clase: 'c-num', valor: (f) => pill(f.nota) },
+      { etiqueta: 'Título', clase: 't c-titulo', titulo: true, valor: tituloCelda },
+      { etiqueta: 'IMDb', clase: 'c-num', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) },
+      { etiqueta: 'Diferencia', clase: 'c-num', valor: (f) => texto(f.diferencia) }
     ],
     lista: [
-      { etiqueta: 'Título', clase: 't', valor: (f) => f.titulo },
-      { etiqueta: 'Tipo', valor: (f) => f.tipo || '-' },
-      { etiqueta: 'Año', valor: (f) => (f.year == null ? '-' : texto(f.year)) },
-      { etiqueta: 'Géneros', valor: (f) => mostrarGeneros(f.generos) },
-      { etiqueta: 'IMDb', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) },
-      { etiqueta: 'Tu nota', valor: (f) => (f.nota == null ? np() : pill(f.nota)) }
+      { etiqueta: 'Título', clase: 't c-titulo', valor: (f) => f.titulo },
+      { etiqueta: 'Tipo', clase: 'c-txt', valor: (f) => f.tipo || '-' },
+      { etiqueta: 'Año', clase: 'c-num', valor: (f) => (f.year == null ? '-' : texto(f.year)) },
+      { etiqueta: 'Géneros', clase: 'c-txt', valor: (f) => mostrarGeneros(f.generos) },
+      { etiqueta: 'IMDb', clase: 'c-num', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) },
+      { etiqueta: 'Tu nota', clase: 'c-num', valor: (f) => (f.nota == null ? np() : pill(f.nota)) }
     ],
     seguimiento: [
-      { etiqueta: 'Título', clase: 't', valor: tituloCelda },
-      { etiqueta: 'Tipo', valor: (f) => f.tipo || '-' },
-      { etiqueta: 'IMDb', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) }
+      { etiqueta: 'Título', clase: 't c-titulo', valor: tituloCelda },
+      { etiqueta: 'Tipo', clase: 'c-txt', valor: (f) => f.tipo || '-' },
+      { etiqueta: 'IMDb', clase: 'c-num', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) }
     ]
   };
   Object.keys(COLUMNAS).forEach((id) => { SECCIONES[id].columnas = COLUMNAS[id]; });
@@ -1015,6 +1093,7 @@ def generar(db_path: Path) -> str:
   function filaDe(conf, f) {
     const tr = document.createElement('tr');
     tr.dataset.tt = f.tt;
+    if (conf.tarjeta) return filaDeTarjeta(conf, f);
     conf.columnas.forEach((col) => {
       const td = document.createElement('td');
       if (col.clase) td.className = col.clase;
@@ -1024,6 +1103,45 @@ def generar(db_path: Path) -> str:
       else td.textContent = v;
       tr.appendChild(td);
     });
+    return tr;
+  }
+
+  /* Fila tipo tarjeta: el titulo arriba y los datos en una fila alineada
+     debajo (tu nota, IMDb, diferencia). */
+  function filaDeTarjeta(conf, f) {
+    const tr = document.createElement('tr');
+    tr.dataset.tt = f.tt;
+    const td = document.createElement('td');
+    td.className = 'celda-tarjeta';
+    td.colSpan = conf.columnas.length;
+    const cabecera = document.createElement('div');
+    cabecera.className = 'tarjeta-titulo';
+    const colTitulo = conf.columnas.find((c) => c.titulo);
+    if (colTitulo) {
+      const v = colTitulo.valor(f);
+      if (v instanceof Node) cabecera.appendChild(v);
+      else cabecera.textContent = v;
+    }
+    td.appendChild(cabecera);
+    const datos = document.createElement('div');
+    datos.className = 'tarjeta-datos';
+    conf.columnas.forEach((col) => {
+      if (col.titulo) return;
+      const caja = document.createElement('div');
+      caja.className = 'dato';
+      const etiqueta = document.createElement('span');
+      etiqueta.className = 'dato-label';
+      etiqueta.textContent = col.etiqueta;
+      const valor = document.createElement('span');
+      valor.className = 'dato-valor';
+      const v = col.valor(f);
+      if (v instanceof Node) valor.appendChild(v);
+      else valor.textContent = v;
+      caja.append(etiqueta, valor);
+      datos.appendChild(caja);
+    });
+    td.appendChild(datos);
+    tr.appendChild(td);
     return tr;
   }
 
@@ -1656,30 +1774,30 @@ def generar(db_path: Path) -> str:
 {para_ti_html}
 {perfil_html}
 <section id="seccion-top" aria-labelledby="titulo-top">{top_head}
-<table class="paginada tabla-cards" id="tabla-top" data-seccion="top"><thead><tr><th>Tu nota</th><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
+<table class="paginada tabla-cards" id="tabla-top" data-seccion="top"><colgroup><col style="width:92px"><col><col style="width:150px"><col style="width:86px"></colgroup><thead><tr><th class="c-num">Tu nota</th><th class="c-titulo">Título</th><th class="c-txt">Tipo</th><th class="c-num">IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
 <div class="grid2">
 <section id="seccion-joyas" aria-labelledby="titulo-joyas">{joyas_head}
-<table class="paginada tabla-cards" id="tabla-joyas" data-seccion="joyas"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{joya_rows}</tbody></table></section>
+<table class="paginada tabla-tarjeta" id="tabla-joyas" data-seccion="joyas"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{joya_rows}</tbody></table></section>
 <section id="seccion-decepciones" aria-labelledby="titulo-decepciones">{decep_head}
-<table class="paginada tabla-cards" id="tabla-decepciones" data-seccion="decepciones"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{decep_rows}</tbody></table></section>
+<table class="paginada tabla-tarjeta" id="tabla-decepciones" data-seccion="decepciones"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{decep_rows}</tbody></table></section>
 </div>
 <div class="grid2">
 <section id="seccion-generos" aria-labelledby="titulo-generos">{generos_head}
-<table class="paginada tabla-cards" id="tabla-generos" data-seccion="generos"><thead><tr><th>Género</th><th>Títulos</th><th></th><th>Media</th></tr></thead><tbody>{gen_rows}</tbody></table></section>
+<table class="paginada" id="tabla-generos" data-seccion="generos"><colgroup><col><col style="width:96px"><col style="width:96px"></colgroup><thead><tr><th class="c-txt">Género</th><th class="c-num">Títulos</th><th class="c-num">Media</th></tr></thead><tbody>{gen_rows}</tbody></table></section>
 <section id="seccion-directores" aria-labelledby="titulo-directores">{directores_head}
-<table class="paginada tabla-cards" id="tabla-directores" data-seccion="directores"><thead><tr><th>Director</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{dir_rows}</tbody></table></section>
+<table class="paginada" id="tabla-directores" data-seccion="directores"><colgroup><col><col style="width:96px"><col style="width:96px"></colgroup><thead><tr><th class="c-txt">Director</th><th class="c-num">Títulos</th><th class="c-num">Media</th></tr></thead><tbody>{dir_rows}</tbody></table></section>
 </div>
 <div class="grid2">
 <section id="seccion-actores" aria-labelledby="titulo-actores">{actores_head}
-<table class="paginada tabla-cards" id="tabla-actores" data-seccion="actores"><thead><tr><th>Actor</th><th>Títulos</th><th>Media</th></tr></thead><tbody>{actor_rows}</tbody></table></section>
+<table class="paginada" id="tabla-actores" data-seccion="actores"><colgroup><col><col style="width:96px"><col style="width:96px"></colgroup><thead><tr><th class="c-txt">Actor</th><th class="c-num">Títulos</th><th class="c-num">Media</th></tr></thead><tbody>{actor_rows}</tbody></table></section>
 <section id="seccion-decadas" aria-labelledby="titulo-decadas">{decadas_head}
-<table class="paginada tabla-cards" id="tabla-decadas" data-seccion="decadas"><thead><tr><th>Década</th><th>Títulos</th><th></th><th>Media IMDb</th></tr></thead><tbody>{dec_rows}</tbody></table></section>
+<table class="paginada" id="tabla-decadas" data-seccion="decadas"><colgroup><col><col style="width:96px"><col style="width:110px"></colgroup><thead><tr><th class="c-txt">Década</th><th class="c-num">Títulos</th><th class="c-num">Media IMDb</th></tr></thead><tbody>{dec_rows}</tbody></table></section>
 </div>
 <section id="lista" aria-labelledby="titulo-lista">{lista_head}
 <input class="search" id="q" type="search" placeholder="Filtra por título o género…" aria-label="Filtrar lista completa">
-<table class="paginada tabla-cards" id="tabla-todas" data-seccion="lista"><thead><tr><th>Título</th><th>Tipo</th><th>Año</th><th>Géneros</th><th>IMDb</th><th>Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
+<table class="paginada tabla-cards" id="tabla-todas" data-seccion="lista"><colgroup><col><col style="width:150px"><col style="width:72px"><col><col style="width:78px"><col style="width:104px"></colgroup><thead><tr><th class="c-titulo">Título</th><th class="c-txt">Tipo</th><th class="c-num">Año</th><th class="c-txt">Géneros</th><th class="c-num">IMDb</th><th>Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
 <section id="seccion-seguimiento" aria-labelledby="titulo-seguimiento">{seguimiento_head}
-<table class="paginada tabla-cards" id="tabla-seguimiento" data-seccion="seguimiento"><thead><tr><th>Título</th><th>Tipo</th><th>IMDb</th></tr></thead><tbody>{pend_rows}</tbody></table></section>
+<table class="paginada tabla-cards" id="tabla-seguimiento" data-seccion="seguimiento"><colgroup><col><col style="width:150px"><col style="width:86px"></colgroup><thead><tr><th class="c-titulo">Título</th><th class="c-txt">Tipo</th><th class="c-num">IMDb</th></tr></thead><tbody>{pend_rows}</tbody></table></section>
 <div class="overlay" id="overlay" hidden><div class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
 <button class="ficha-cerrar" id="ficha-cerrar" aria-label="Cerrar ficha">×</button>
 <div id="ficha-contenido"></div></div></div>

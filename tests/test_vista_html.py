@@ -285,12 +285,46 @@ class TestVistaHtml(unittest.TestCase):
         for marcador in ('id="seccion-decadas"', 'id="tabla-decadas"',
                          "Notas por década"):
             self.assertIn(marcador, pagina)
-        # Una fila por década con su barra de distribución.
+        # Una fila por década, en lista básica: valor, títulos y media.
         for decada in ("1970s", "1990s", "2010s"):
             self.assertIn(f">{decada}<", pagina)
         inicio = pagina.index('id="tabla-decadas"')
         bloque = pagina[inicio:pagina.index("</table>", inicio)]
-        self.assertIn('class="bar"', bloque)
+        self.assertIn('class="c-num"', bloque)
+        self.assertNotIn('class="bar"', bloque)
+
+    def test_las_las_agregadas_son_lista_basica(self):
+        """Géneros, directores, actores y décadas: tres columnas, sin barras."""
+        pagina = self._generar_con_fixture()
+        for tabla in ("tabla-generos", "tabla-directores", "tabla-actores",
+                      "tabla-decadas"):
+            inicio = pagina.index(f'id="{tabla}"')
+            bloque = pagina[inicio:pagina.index("</table>", inicio)]
+            self.assertNotIn('class="bar"', bloque, tabla)
+            self.assertIn('class="c-num"', bloque, tabla)
+            # La barra se fue: solo valor, títulos y media.
+            self.assertEqual(bloque.count("</th>"), 3, tabla)
+            # Sin botón de filtro muerto en las secciones de información.
+            self.assertNotIn('data-filtro="generos"', pagina)
+            self.assertNotIn('data-filtro="decadas"', pagina)
+
+    def test_las_tablas_numericas_alinean_a_la_derecha(self):
+        pagina = self._generar_con_fixture()
+        # Las cifras no se parten y van a la derecha.
+        self.assertIn("overflow-wrap: break-word", pagina)
+        self.assertNotIn("overflow-wrap: anywhere", pagina)
+        self.assertIn(".c-num { text-align: right; white-space: nowrap;", pagina)
+        self.assertIn('class="c-num"', pagina)
+
+    def test_joyas_y_decepciones_son_tarjeta(self):
+        """Título arriba y los tres datos alineados debajo."""
+        pagina = self._generar_con_fixture()
+        for tabla in ("tabla-joyas", "tabla-decepciones"):
+            self.assertIn(f'class="paginada tabla-tarjeta" id="{tabla}"', pagina)
+        # El motor dibuja la tarjeta: título y datos.
+        self.assertIn("filaDeTarjeta", pagina)
+        self.assertIn("tarjeta-datos", pagina)
+        self.assertIn("tarjeta: true", pagina)
 
 
 if __name__ == "__main__":

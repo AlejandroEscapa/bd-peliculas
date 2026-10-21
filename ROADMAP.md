@@ -5,6 +5,20 @@ Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, fic
 Tuberías conectadas (2026-10-20): colecciones de TMDB (`belongs_to_collection`, 0 peticiones extra) en `title_collections`, con relaciones saga derivadas en `title_relations`; `schema_version` ya se registra al aplicar el esquema. La ficha muestra el bloque "Colección" con las partes de tu catálogo, por año y con tu nota.
 Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
 
+## Rediseño de la interfaz (2026-10-21)
+
+- Sistema de columnas: tipos `c-num` (cifras a la derecha, con cifras de ancho
+  fijo y nunca partidas), `c-titulo`, `c-razon`, `c-encaje`, y `<colgroup>` por
+  tabla. La causa de que un "2004" saliera partido era `overflow-wrap: anywhere`
+  en el body: ahora es `break-word`.
+- Joyas y Decepciones pasan a **tarjeta**: título arriba y los tres datos
+  (tu nota, IMDb, diferencia) en una fila alineada debajo.
+- Géneros, Directores, Actores y Décadas vuelven a ser **lista básica** de tres
+  columnas (valor, títulos, media), sin la barra de distribución que los
+  descuadraba y sin el botón de filtro muerto.
+- Los KPI ya no se cortan ("177/207") y las etiquetas quedan alineadas.
+- Verificado con capturas reales en Edge headless (CDP), escritorio y móvil.
+
 ## Publicar sin perder nada (2026-10-21)
 
 - `scripts/publicar.py` sustituye al `generar_vista.py` + `git commit` a mano: copia la base, genera a un temporal, **compara con el snapshot publicado** y solo lo sustituye si no pierde títulos, valoradas, sinopsis, pósteres ni reparto. Si pierde algo, sale con código 3 sin tocar nada.
