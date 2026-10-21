@@ -49,6 +49,9 @@ Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
 
 > **Handoff completo** (guion, verificaciones, mapa del código, decisiones
 > tomadas y trampas conocidas): [`docs/superpowers/plans/2026-10-20-handoff.md`](docs/superpowers/plans/2026-10-20-handoff.md).
+>
+> **Prompt para el agente de casa** (autónomo, listo para copiar y pegar):
+> [`docs/superpowers/plans/2026-10-21-handoff-casa.md`](docs/superpowers/plans/2026-10-21-handoff-casa.md).
 
 > **Todo está commiteado y pusheado** (`main` = `origin/main`), suite
 > 121/121 en verde, y **la vista ya está publicada**: `preview/dashboard.html`

@@ -466,9 +466,25 @@ def _tarjeta_poster(r: sqlite3.Row, e=html.escape) -> str:
 
 
 def generar(db_path: Path) -> str:
+    db_path = Path(db_path)
+    # Falla claro y pronto: una base vacía o inexistente genera un panel en
+    # blanco (o deja un fichero vacío que luego confunde). Mejor un error.
+    if not db_path.exists():
+        raise SystemExit(
+            f"error: no existe la base {db_path}\n"
+            "       Si querias la base de trabajo: python scripts/semilla.py")
     c = sqlite3.connect(str(db_path))
     c.row_factory = sqlite3.Row
-    total = c.execute("SELECT COUNT(*) n FROM titles").fetchone()["n"]
+    try:
+        total = c.execute("SELECT COUNT(*) n FROM titles").fetchone()["n"]
+    except sqlite3.OperationalError as e:
+        raise SystemExit(f"error: {db_path} no parece una base de este proyecto ({e})")
+    if not total:
+        raise SystemExit(
+            f"error: la base {db_path} esta vacia (0 titulos).\n"
+            "       Puede ser un resto de una ejecucion con una ruta equivocada.\n"
+            "       No sigas: comprueba el camino y, si hace falta, restaura\n"
+            "       desde backups/ (python scripts/backup.py ya deja copia).")
     valoradas = c.execute(
         "SELECT COUNT(*) n FROM user_state WHERE my_rating IS NOT NULL").fetchone()["n"]
     pendientes = total - valoradas
