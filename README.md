@@ -126,6 +126,11 @@ de los tres la despliega (también con Enter o Espacio, porque el mando es un
 botón real). "Para ti" arranca abierta; el resto, plegadas. Si un KPI lleva a
 una sección plegada, esta se despliega antes de llevarte allí.
 
+**La web se sirve con un zoom del 110%** (`html { zoom: 1.1 }`): escala
+tipografía, espaciados y bordes como si hubieras pulsado Ctrl + en el
+navegador. Donde el navegador no lo soporta (Safari < 16.4, Firefox < 126),
+la web funciona igual, solo que sin escalar.
+
 ## Publicar sin pisar
 
 `preview/dashboard.html` es un artefacto commiteado. Regenerarlo desde una base

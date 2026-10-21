@@ -29,6 +29,12 @@ CSS = """
 * { box-sizing: border-box; margin: 0; }
 [hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
+/* Zoom del navegador, aplicado al elemento raíz: escala tipografía,
+   espaciados, bordes y radios igual que harías con Ctrl + en el navegador
+   (la ventana efectiva se reduce un 9% y ves un poco menos de contenido).
+   Soportado en Chrome/Edge, Safari 16.4+ y Firefox 126+; donde no exista,
+   la web sigue funcionando, solo que sin escalar. */
+html { zoom: 1.1; }
 body { font-family: -apple-system, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
 background: var(--bg); color: var(--ink); overflow-wrap: break-word;
 padding: var(--sp) clamp(16px, 4vw, 24px) calc(64px + env(safe-area-inset-bottom)); }
@@ -97,6 +103,9 @@ transform: rotate(180deg); transition: transform .2s ease, color .15s ease; }
 .chevron svg { width: 20px; height: 20px; }
 section.plegada .chevron { transform: rotate(0deg); }
 section.plegada .section-cuerpo { display: none; }
+/* Plegada, la cabecera se queda sin margen inferior: si no, el par
+   título+descripción queda por encima del centro de la tira. */
+section.plegada .section-head { margin-bottom: 0; }
 table { width: 100%; border-collapse: collapse; font-size: 14px;
 table-layout: fixed; }
 th { text-align: left; color: var(--sub); font-weight: 600; font-size: 11px;
@@ -704,35 +713,37 @@ def generar(db_path: Path) -> str:
             + tarjeta_kpi("enriquecidos", f"{enr_hechos}/{enr_total}",
                           "Enriquecidos", "lista")
             + '</div>')
+    # Las cabeceras no cuentan la paginación: el botón "Cargar 15 más" y
+    # el "Mostrando X de Y" de debajo de cada tabla ya lo dicen.
     posters_head = cabecera_seccion(
         "posters", "Tus favoritas, en cartel",
-        "Top 10 por tu nota. Pulsa una para abrir la ficha.", plegable=False)
+        "Top 10 por tu nota.", plegable=False)
     top_head = cabecera_seccion(
-        "top", "Tus favoritas", "Ordenadas por tu nota. 15 visibles, carga 15 más.")
+        "top", "Tus favoritas", "Ordenadas por tu nota.")
     joyas_head = cabecera_seccion(
         "joyas", "Joyas que tú amas",
-        "Tu nota supera a IMDb en 1.5+. 15 visibles, carga 15 más.")
+        "Tu nota supera a IMDb en 1.5+.")
     decep_head = cabecera_seccion(
         "decepciones", "Decepciones",
-        "IMDb te supera en 1.5+. 15 visibles, carga 15 más.")
+        "IMDb te supera en 1.5+.")
     generos_head = cabecera_simple(
         "generos", "Géneros que más te gustan",
-        "Nota media de tus valoradas. 15 visibles, carga 15 más.")
+        "Nota media de tus valoradas.")
     directores_head = cabecera_simple(
         "directores", "Directores frecuentes",
-        "En tus títulos valorados. 15 visibles, carga 15 más.")
+        "En tus títulos valorados.")
     actores_head = cabecera_simple(
         "actores", "Actores de confianza",
-        "Tu nota media por actor (mínimo 2 títulos). 15 visibles, carga 15 más.")
+        "Tu nota media por actor (mínimo 2 títulos).")
     decadas_head = cabecera_seccion(
         "decadas", "Notas por década",
         "Títulos y nota media IMDb por década. Filtra por tipo o por tu nota.")
     lista_head = cabecera_seccion(
         "lista", "Lista completa",
-        f"Los {len(todas)} títulos. Filtra sin recargar. 15 visibles, carga 15 más.")
+        f"Los {len(todas)} títulos.")
     seguimiento_head = cabecera_seccion(
         "seguimiento", "En seguimiento",
-        "Sin tu nota todavía. 15 visibles, carga 15 más.")
+        "Sin tu nota todavía.")
 
     posters = "".join(_tarjeta_poster(r) for r in top_posters) or (
         '<p class="empty">Aún no has valorado nada.</p>')

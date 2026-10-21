@@ -95,6 +95,23 @@ frescura el resto de campos de TMDB. Fix en `src/proveedores/tmdb.py`
   el subtítulo va en su propio elemento para que caiga alineado en todas las
   filas.
 
+## Zoom, tiras centradas y cabeceras limpias (2026-10-22)
+
+- **Zoom del 110%** con `html { zoom: 1.1 }`: es el mismo mecanismo que el
+  zoom del navegador, aplicado al elemento raíz, así que escala tipografía,
+  espaciados, bordes y radios de una vez. Verificado: sin scroll horizontal y
+  la ficha (position: fixed) sigue cubriendo la ventana. Donde el navegador no
+  lo soporta (Safari < 16.4, Firefox < 126) la web funciona igual, solo que
+  sin escalar.
+- **Tiras plegadas centradas**: la cabecera conservaba su `margin-bottom`
+  cuando el cuerpo se ocultaba, así que el par título+descripción quedaba
+  14 px por encima del centro. Con `section.plegada .section-head { margin-bottom: 0 }`
+  el desvío medido es 0 px.
+- **Cabeceras sin texto de paginación**: fuera "15 visibles, carga 15 más",
+  "Pulsa una para abrir la ficha" y "Filtra sin recargar". El botón "Cargar
+  15 más (45 restantes)" y el "Mostrando 15 de 60" de debajo de cada tabla ya
+  cuentan lo mismo, y las tiras plegadas quedan más limpias.
+
 ## Publicar sin perder nada (2026-10-21)
 
 - `scripts/publicar.py` sustituye al `generar_vista.py` + `git commit` a mano: copia la base, genera a un temporal, **compara con el snapshot publicado** y solo lo sustituye si no pierde títulos, valoradas, sinopsis, pósteres ni reparto. Si pierde algo, sale con código 3 sin tocar nada.

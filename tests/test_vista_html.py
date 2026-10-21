@@ -381,6 +381,24 @@ class TestVistaHtml(unittest.TestCase):
             self.assertNotIn('data-filtro="generos"', pagina)
             self.assertNotIn('data-filtro="actores"', pagina)
 
+    def test_la_web_se_siente_como_un_zoom_del_navegador(self):
+        pagina = self._generar_con_fixture()
+        # Zoom del navegador aplicado al elemento raíz.
+        self.assertIn("html { zoom: 1.1; }", pagina)
+
+    def test_las_tiras_plegadas_centran_sus_textos(self):
+        pagina = self._generar_con_fixture()
+        # Plegada, la cabecera no deja margen suelta: si no, el par
+        # título+descripción queda por encima del centro de la tira.
+        self.assertIn("section.plegada .section-head { margin-bottom: 0; }", pagina)
+
+    def test_las_cabeceras_no_cuentan_la_paginacion(self):
+        pagina = self._generar_con_fixture()
+        # El botón "Cargar 15 más" y el "Mostrando X de Y" ya lo dicen.
+        for sobrante in ("15 visibles", "carga 15 más", "Pulsa una para abrir la ficha",
+                         "Filtra sin recargar"):
+            self.assertNotIn(sobrante, pagina)
+
     def test_joyas_y_decepciones_son_tarjeta(self):
         """Título arriba (centrado) y los tres datos alineados debajo."""
         pagina = self._generar_con_fixture()
