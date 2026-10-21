@@ -26,7 +26,8 @@ en la skill global `anadir-peliculas` (`~/.agents/skills/anadir-peliculas/`).
 
 - CSV es entrada delta: la fuente manda por columna, vacío jamás borra, diffs en `sync_diffs`, sin `tt` válido a cuarentena. Solo escribe columnas CSV-own (`src/sync.py::CSV_OWN_TITLES` + géneros/directores `imdb_csv` + nota no-nula nueva).
 - Enriquecido solo rellena faltantes (`solo_faltantes=True`, `INSERT OR IGNORE`); la cola sale de `src/huecos.py::listar_huecos`. Un título roto no aborta el lote.
+- El snapshot se publica **siempre** con `scripts/publicar.py` (compara y no publica si pierde algo). Nunca `generar_vista.py` + commit del HTML a mano.
 - Migraciones forward-only en `db/migrations/`; no editar las aplicadas. Vistas solo-lectura en `db/views.sql`.
 - Secretos solo por entorno (`TMDB_BEARER`, `OMDB_API_KEY`). Nunca en código, `.env` ni Git. No reproducir valores en chat/logs.
-- Panel: HTML estático sin dependencias, en español, paginación 15+15 (`table.paginada` + `.more-btn`), consultas parametrizadas, `html.escape` en todo texto de BD.
-- Tests stdlib (`python -m unittest discover -s tests`, 131 tests). Toda idea visual se propone de una en una y solo se implementa la aceptada.
+- Panel: HTML estático sin dependencias, en español, paginación 15+15 (`table.paginada` + `.more-btn`), consultas parametrizadas, `html.escape` en todo texto de BD. Se sirve con `html { zoom: 1.1 }` (zoom del navegador) y las secciones se pliegan: el mando es `.plegable-tap`, "Para ti" abre y las demás no.
+- Tests stdlib (`python -m unittest discover -s tests`, 140 tests). Toda idea visual se propone de una en una y solo se implementa la aceptada.

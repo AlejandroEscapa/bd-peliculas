@@ -1,9 +1,10 @@
 # Roadmap — Catálogo personal (db-peliculas)
 
-Estado a 2026-10-21 (publicado desde la base real): 207 títulos, 148 valoradas, 0 títulos sin enriquecer (207/207), 45 colecciones de TMDB (11 sagas con más de una parte en tu catálogo), 54 relaciones de saga. Suite 122/122 OK.
-Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, ficha overlay con sinopsis al final, strip de pósters, motor de filtros por sección (facetas + orden) y paginación reactiva, Joyas/Decepciones + Géneros/Directores/Actores, KPIs extra (Exigencia y Enriquecidos X/207), Notas por década y "Para ti" (pendientes ordenados por encaje, con su porqué) y el bloque "Colección" en la ficha.
+Estado a 2026-10-22 (publicado desde la base real): 208 títulos, 149 valoradas, 0 títulos sin enriquecer (208/208), 45 colecciones de TMDB (11 sagas con más de una parte en tu catálogo), 54 relaciones de saga. Suite 140/140 OK.
+Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, ficha overlay con sinopsis al final y la Colección debajo a todo el ancho, strip de pósters, motor de filtros por sección (facetas + orden) y paginación reactiva, Joyas/Decepciones + Géneros/Directores/Actores, KPIs extra (Exigencia y Enriquecidos X/208), Notas por década y "Para ti" (pendientes ordenados por encaje, con su porqué y las filas a la misma altura). **Todas las secciones se pliegan** (menos el strip de pósters; "Para ti" abre) y el panel **se sirve con un zoom del 110%**. Todo centrado menos títulos, "por qué" y géneros.
 Tuberías conectadas (2026-10-20): colecciones de TMDB (`belongs_to_collection`, 0 peticiones extra) en `title_collections`, con relaciones saga derivadas en `title_relations`; `schema_version` ya se registra al aplicar el esquema. La ficha muestra el bloque "Colección" con las partes de tu catálogo, por año y con tu nota.
-Watcher `scripts/auto_vista.py` verificado. Suite 122/122 OK.
+Altas a mano (2026-10-22): `scripts/anadir_pelicula.py` da de alta una película con su nota y la enriquece, sin duplicar y sin que el CSV posterior la pise (skill global `anadir-peliculas`).
+Watcher `scripts/auto_vista.py` verificado. Suite 140/140 OK.
 
 ## Trampa de TMDB (2026-10-21)
 
@@ -131,12 +132,13 @@ frescura el resto de campos de TMDB. Fix en `src/proveedores/tmdb.py`
 > [`docs/superpowers/plans/2026-10-21-handoff-casa.md`](docs/superpowers/plans/2026-10-21-handoff-casa.md).
 
 > **Todo está commiteado y pusheado** (`main` = `origin/main`), suite
-> 122/122 en verde, y **la vista está publicada desde la base real**:
+> 140/140 en verde, y **la vista está publicada desde la base real**:
 > `preview/dashboard.html` lleva el rediseño, el motor depurado, los KPI
-> navegables y **las sagas**.
+> navegables, **las sagas**, las secciones plegables y el zoom del 110%.
 >
 > **Estado (2026-10-21):** ejecutados los 3 pasos del prompt de handoff sobre
-> la base real (`data/catalogo.db`, 207 títulos / 148 valoradas).
+> la base real (`data/catalogo.db`, 207 títulos / 148 valoradas *en ese
+> momento*; hoy son 208 / 149 con "La bola negra" añadida a mano).
 >
 > - **Bloqueo encontrado y arreglado**: TMDB ya no responde `/find/{tt}` sin
 >   `external_source=imdb_id` (404, `status_code` 34), así que el scraper
@@ -198,20 +200,29 @@ Ya está publicado; esto lo deja **definitivo** (y de paso añade las sagas).
 
 ### 3. Decidir la siguiente idea visual (una por vez)
 
+Lo siguiente sigue siendo lo siguiente (cada idea se propone y solo se
+implementa la aceptada):
+
 - [ ] "Tus guionistas favoritos" — el dato (`title_credits` extra: guionista,
-      productor, compositor) **ya está descargado**, solo es mostrarlo.
+      productor, compositor) **ya está descargado**, solo es mostrarlo. Los
+      datos de ejemplo: Nolan/Jonathan Nolan 9.0 de media, Villeneuve 9.5,
+      Tolkien 8.67, Rowling 6.86.
 - [ ] "Mi perfil" — lift por género/director/actor (tu media en la faceta
       menos tu media global). Es la pieza que hace explicable el motor.
 - [ ] "Qué ver hoy" — ruleta determinista por día sobre los pendientes.
 - [ ] Bloque "Colección" **completo**: las partes que no tienes (1 petición
       por colección, y las colecciones son pocas).
 - [ ] Mapa de países (sigue en la lista desde el principio).
+- [ ] Recordar qué secciones estaban plegadas (hoy se reinicia en cada
+      visita: "Para ti" abierta y el resto plegadas).
 
 ### 4. Backlog de datos
 
 - [ ] Fase 2 TMDB: `estreno_es`, `presupuesto`/`taquilla`, `serie_info`.
-- [ ] Los ~50 títulos que TMDB-find no resolvió (reintentar tras fase 2 o con
+- [ ] Los títulos que TMDB-find no resolvió (reintentar tras fase 2 o con
       OMDb-solo; OMDb tiene 1000 peticiones/día).
+- [ ] `runtime_min_exact` de "La bola negra": IMDb dice 2h 40min (160) y
+      TMDB 155. Se queda el de la web hasta que llegue el export.
 
 ### 5. NO tocar ahora
 

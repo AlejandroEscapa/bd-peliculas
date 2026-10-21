@@ -6,7 +6,7 @@
 
 SQLite + Python stdlib. Sin servidor, sin ORM y sin dependencias en tiempo de ejecución.
 
-[**Demo en vivo**](https://bd-peliculas-weld.vercel.app) · [Código](https://github.com/AlejandroEscapa/bd-peliculas) · Python 3.11+ · 35+ tests · Licencia MIT
+[**Demo en vivo**](https://bd-peliculas-weld.vercel.app) · [Código](https://github.com/AlejandroEscapa/bd-peliculas) · Python 3.11+ · 140 tests · Licencia MIT
 
 ![Panel del catálogo](docs/assets/dashboard.png)
 
@@ -19,6 +19,8 @@ Importas tu export de IMDb una vez y el catálogo se queda con tus notas. A part
 - **El panel es un fichero estático.** `generar_vista.py` convierte la base en un dashboard HTML sin framework, sin build y sin peticiones al servidor. La paginación es 15 + 15 con JavaScript puro.
 - **Las sagas salen gratis.** La colección de cada título viene en la misma respuesta de TMDB que ya se pedía (`belongs_to_collection`): cero peticiones extra. De ahí se derivan las relaciones de saga y la ficha muestra las partes que tienes, por año y con tu nota.
 - **Las recomendaciones se explican.** `src/motor.py` ordena tus pendientes según lo que encaja contigo (afinidad por género, director, actor, década y país; antiperfil; saga; similitud textual sobre las sinopsis) y **cada uno lleva su porqué**. Sin filtrado colaborativo: con un solo usuario no hay señal de otros que aprender.
+- **Puedes añadir una película a mano.** `scripts/anadir_pelicula.py` da de alta la que acabas de ver (con su nota) y la enriquece; si más tarde llega tu export de IMDb, el título no se duplica ni se pisa. Está documentado en la skill global `anadir-peliculas`.
+- **El panel se pliega y se lee cómodo.** Las secciones son tiras que se despliegan con un clic (o con el teclado), el catálogo se sirve con un zoom del 110% y todas las cifras van centradas menos los títulos, el "por qué" y los géneros.
 
 El resultado es un catálogo que puedes abrir en local, versionar como snapshot y desplegar en cualquier hosting estático.
 
@@ -90,6 +92,7 @@ En Linux o macOS, cambia `set` por `export` y `start` por `open`. Sin `OMDB_API_
 | Comando | Qué hace |
 |---|---|
 | `python scripts/actualizar_peliculas.py <csv>` | Importa un delta y registra diffs y cuarentena |
+| `python scripts/anadir_pelicula.py --tt tt1234567 --nota 9` | Da de alta una película a mano (la que acabas de ver) y la enriquece |
 | `python scripts/scrapear_peliculas.py --proveedor ... --limite N --delay S` | Rellena huecos con pausa entre peticiones |
 | `python scripts/derivar_relaciones.py` | Deduce relaciones de saga desde las colecciones |
 | `python scripts/recomendar.py` | Ordena tus pendientes por encaje y explica el porqué |
@@ -162,7 +165,7 @@ reparto. Si pierde algo, sale con código 3 y no toca nada.
 python -m unittest discover -s tests
 ```
 
-35+ tests con `unittest`, sin `pytest` ni dependencias. Cubren esquema y vistas, importación delta y diffs, cuarentena, huecos, proveedores, relaciones, scraper y el HTML generado.
+140 tests con `unittest`, sin `pytest` ni dependencias. Cubren esquema y vistas, importación delta y diffs, cuarentena, huecos, proveedores, relaciones, scraper, altas manuales y el HTML generado.
 
 ## Demo y datos
 
@@ -189,10 +192,12 @@ Para reproducir el panel con tus datos, importa tu propio export. El repo no inc
 ## Roadmap
 
 - [x] Vista de pósters en el panel, manteniendo la paginación 15 + 15.
-- [ ] Fase 2 de TMDB: estreno en España, presupuesto/taquilla y detalle de series.
-- [ ] CI en GitHub Actions con matriz de Python.
-- [ ] Demo reproducible con datos sintéticos.
+- [x] CI en GitHub Actions con matriz de Python.
+- [x] Demo reproducible con datos sintéticos (`/demo`).
 - [x] Despliegue estático en Vercel y ficha en el portfolio.
+- [x] Secciones plegables, zoom del 110% y cifras centradas.
+- [x] Altas manuales de películas (`scripts/anadir_pelicula.py`).
+- [ ] Fase 2 de TMDB: estreno en España, presupuesto/taquilla y detalle de series.
 
 La línea multiusuario está aparcada y documentada en [`ROADMAP.md`](ROADMAP.md): el aislamiento físico por usuario choca con los free tiers y no es necesario para un producto personal.
 
