@@ -177,7 +177,7 @@ class TestVistaHtml(unittest.TestCase):
     def test_kpis_exigencia_y_enriquecidos(self):
         pagina = self._generar_con_fixture()
         for marcador in ('data-kpi="exigencia"', 'data-kpi="enriquecidos"',
-                         "Exigencia (tú − IMDb)", "Enriquecidos"):
+                         "Exigencia (tú−IMDb)", "Enriquecidos"):
             self.assertIn(marcador, pagina)
         # Exigencia = media de (tu nota - IMDb): (10-9.2 + 9-9.0) / 2 = 0.4
         self.assertIn('<span class="n">0.4</span>', pagina)
@@ -185,6 +185,9 @@ class TestVistaHtml(unittest.TestCase):
         self.assertIn('<span class="n">0/3</span>', pagina)
         # Y ahora son enlaces navegables, no botones con filtro.
         self.assertIn('class="kpi" data-kpi="exigencia"', pagina)
+        # La etiqueta larga se recorta en pantalla, pero el texto íntegro
+        # queda en el title (y el aria-label no pierde información).
+        self.assertIn('title="Exigencia (tu nota menos IMDb)"', pagina)
 
     def _generar_con_colecciones(self, *tts):
         """Página con tts dentro de una misma colección de saga."""
@@ -270,18 +273,55 @@ class TestVistaHtml(unittest.TestCase):
 
     def test_para_ti_tiene_altura_uniforme_y_motivos_plegables(self):
         pagina = self._generar_con_motor()
-        # La celda del motivo reserva el alto del motivo mas largo.
-        self.assertIn("min-height", pagina)
+        # La celda del motivo tiene alto fijo: todas las filas miden lo mismo.
+        self.assertIn(".c-razon { height: 6.4em;", pagina)
+        self.assertIn("display: flex; flex-direction: column;", pagina)
+        self.assertIn("justify-content: space-between;", pagina)
         # Y los motivos secundarios se pliegan tras un boton.
         self.assertIn("motivo-mas", pagina)
         self.assertIn(".motivo-sec { display: none", pagina)
         self.assertIn(".c-razon.abierta .motivo-sec { display: block", pagina)
+        # Al abrir, la celda puede crecer (y el boton no se solapa).
+        self.assertIn(".c-razon.abierta { height: auto; justify-content: flex-start; }",
+                      pagina)
 
-    def test_tus_favoritas_tiene_las_cifras_centradas(self):
+    def test_para_ti_el_motivo_se_corta_a_dos_lineas(self):
+        pagina = self._generar_con_motor()
+        # Tres lineas de motivo + boton descuadran la tabla: el motivo se
+        # corta a dos y el boton va en su propia linea.
+        self.assertIn("-webkit-line-clamp: 2;", pagina)
+        self.assertIn(".c-razon .motivo { align-self: stretch; width: 100%; }", pagina)
+
+    def test_los_kpi_no_reservan_una_doble_linea(self):
         pagina = self._generar_con_fixture()
-        self.assertIn("tabla-centrada", pagina)
-        self.assertIn(".tabla-centrada th.c-num, .tabla-centrada td.c-num { text-align: center; }",
-                       pagina)
+        # La etiqueta del KPI vive en una sola linea y se recorta si no cabe.
+        self.assertIn(".kpi .l { grid-area: l;", pagina)
+        self.assertIn("white-space: nowrap; overflow: hidden; text-overflow: ellipsis;",
+                      pagina)
+        # Y no se reserva hueco para una segunda linea.
+        self.assertNotIn("min-height: 2.6em", pagina)
+        # El recorte es legible: el texto integro queda en el title.
+        for etiqueta in re.findall(r'<a class="kpi"[^>]*>', pagina):
+            self.assertIn("title=", etiqueta)
+
+    def test_las_cifras_van_centradas(self):
+        pagina = self._generar_con_fixture()
+        # Las cifras no se parten y van centradas.
+        self.assertIn("overflow-wrap: break-word", pagina)
+        self.assertNotIn("overflow-wrap: anywhere", pagina)
+        self.assertIn(".c-num { text-align: center; white-space: nowrap;", pagina)
+        self.assertIn('class="c-num"', pagina)
+
+    def test_tipo_va_centrado_como_el_resto_de_cifras(self):
+        pagina = self._generar_con_fixture()
+        # "Tipo" es texto corto: centrado como las cifras.
+        self.assertIn(".c-centro { text-align: center; }", pagina)
+        for tabla in ("tabla-top", "tabla-todas", "tabla-seguimiento"):
+            inicio = pagina.index(f'id="{tabla}"')
+            bloque = pagina[inicio:pagina.index("</table>", inicio)]
+            self.assertIn('class="c-centro" data-label="Tipo"', bloque, tabla)
+        # Y ya no hace falta una clase aparte para centrar cifras.
+        self.assertNotIn("tabla-centrada", pagina)
 
     def test_coleccion_en_el_catalogo_json(self):
         pagina = self._generar_con_colecciones("tt0111161", "tt0068646")
@@ -340,14 +380,6 @@ class TestVistaHtml(unittest.TestCase):
             # Sin botón de filtro muerto en las secciones de información.
             self.assertNotIn('data-filtro="generos"', pagina)
             self.assertNotIn('data-filtro="actores"', pagina)
-
-    def test_las_tablas_numericas_alinean_a_la_derecha(self):
-        pagina = self._generar_con_fixture()
-        # Las cifras no se parten y van a la derecha.
-        self.assertIn("overflow-wrap: break-word", pagina)
-        self.assertNotIn("overflow-wrap: anywhere", pagina)
-        self.assertIn(".c-num { text-align: right; white-space: nowrap;", pagina)
-        self.assertIn('class="c-num"', pagina)
 
     def test_joyas_y_decepciones_son_tarjeta(self):
         """Título arriba y los tres datos alineados debajo."""

@@ -52,18 +52,24 @@ border: none; background: #fff; padding: 8px 10px; cursor: pointer; text-align: 
 .resultados-global .rg-s { color: var(--sub); font-size: 12px; }
 .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
 gap: 10px; margin: 24px 0; }
+/* El KPI es una rejilla de dos filas: el número (con la flecha) arriba y la
+   etiqueta debajo, ocupando todo el ancho hasta los márgenes. La etiqueta
+   vive en una sola línea: si no cabe, se recorta con puntos suspensivos y
+   el texto íntegro queda en el title. Nada de huecos reservados: las
+   tarjetas miden lo mismo. */
 .kpi { position: relative; min-width: 0; background: var(--card);
-border-radius: var(--radius); padding: 13px 34px 13px 13px;
-display: flex; flex-direction: column; justify-content: space-between;
+border-radius: var(--radius); padding: 12px 14px;
+display: grid; grid-template-columns: minmax(0, 1fr) auto;
+grid-template-areas: "n ir" "l l"; align-content: start; gap: 2px 8px;
 text-decoration: none; color: inherit;
 transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
 .kpi:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.07); }
 .kpi:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.kpi .n { font-size: clamp(19px, 2.9vw, 24px); font-weight: 700; letter-spacing: -0.02em;
+.kpi .n { grid-area: n; font-size: clamp(19px, 2.9vw, 24px); font-weight: 700; letter-spacing: -0.02em;
 white-space: nowrap; font-variant-numeric: tabular-nums; line-height: 1.15; }
-.kpi .l { color: var(--sub); font-size: 11px; margin-top: 6px; line-height: 1.3;
-min-height: 2.6em; }
-.kpi .kpi-ir { position: absolute; top: 10px; right: 12px; color: var(--line);
+.kpi .l { grid-area: l; color: var(--sub); font-size: 12px; line-height: 1.3;
+white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kpi .kpi-ir { grid-area: ir; align-self: start; color: var(--line);
 font-size: 13px; transition: color .15s ease, transform .15s ease; }
 .kpi:hover .kpi-ir { color: var(--accent); transform: translateX(2px); }
 section { position: relative; background: var(--card); border-radius: var(--radius);
@@ -84,29 +90,35 @@ td { padding: 11px 12px; border-bottom: 1px solid var(--line);
 vertical-align: top; }
 tr:last-child td { border-bottom: none; }
 tbody tr[data-tt]:hover td { background: var(--bg); }
-/* En las tablas cortas, las cifras van centradas: una columna estrecha
-   alineada a la derecha parece perdida. */
-.tabla-centrada th.c-num, .tabla-centrada td.c-num { text-align: center; }
-.tabla-centrada td.c-num .pill { display: inline-block; }
-/* Tipos de columna: una cifra vive a la derecha, con cifras de ancho fijo
-   (tabular-nums), y nunca se parte. */
-.c-num { text-align: right; white-space: nowrap;
+/* Tipos de columna: las cifras van centradas, con ancho fijo (tabular-nums)
+   y nunca se parten. A la izquierda solo queda lo que ocupa de verdad: los
+   títulos, el "por qué" y los géneros. */
+.c-num { text-align: center; white-space: nowrap;
 font-variant-numeric: tabular-nums; }
+.c-centro { text-align: center; }
 .c-titulo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c-razon { color: var(--sub); font-size: 13px; line-height: 1.5; }
 .c-encaje { text-align: left; }
-/* Altura uniforme: el hueco se calcula con el motivo que mas ocupa, para
-   que todas las filas se sientan igual. */
-.c-razon { min-height: 4.6em; }
+/* Altura uniforme: la celda del motivo reserva siempre el hueco del motivo
+   más largo (dos líneas) más la línea del botón "+N más". Todas las filas
+   miden lo mismo, tenga el motivo que tenga, y el botón nunca se solapa.
+   El alto incluye el padding de la celda (box-sizing: border-box): con
+   menos, el motivo se cortaba por la mitad. */
+.c-razon { height: 6.4em; display: flex; flex-direction: column;
+align-items: flex-start; justify-content: space-between; gap: 3px; }
+/* El motivo ocupa todo el ancho (para que envuelva como antes) y el botón
+   se queda con su tamaño natural en la línea de abajo. */
+.c-razon .motivo { align-self: stretch; width: 100%; }
+.c-razon.abierta { height: auto; justify-content: flex-start; }
 .motivo { color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical;
--webkit-line-clamp: 3; overflow: hidden; }
+-webkit-line-clamp: 2; overflow: hidden; }
 .motivo-sec { display: none; color: var(--sub); font-size: 12px;
 line-height: 1.45; }
 .motivo-sec::before { content: "— "; color: var(--line); }
 .c-razon.abierta .motivo { -webkit-line-clamp: unset; }
 .c-razon.abierta .motivo-sec { display: block; }
 .motivo-vacio { color: var(--sub); }
-.motivo-mas { display: inline-block; margin-left: 6px; border: 1px solid var(--line);
+.motivo-mas { display: inline-block; margin-left: 0; border: 1px solid var(--line);
 background: #fff; color: var(--sub); border-radius: 999px; padding: 1px 8px;
 font-size: 11px; font-weight: 600; cursor: pointer; vertical-align: 1px; }
 .motivo-mas:hover { border-color: var(--accent); color: var(--accent); }
@@ -176,8 +188,9 @@ margin-bottom: 10px; }
 .tarjeta-datos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
 gap: 4px 12px; }
 .dato-label { display: block; font-size: 10.5px; text-transform: uppercase;
-letter-spacing: 0.07em; color: var(--sub); margin-bottom: 2px; }
-.dato-valor { display: block; font-size: 15px; font-variant-numeric: tabular-nums; }
+letter-spacing: 0.07em; color: var(--sub); margin-bottom: 2px; text-align: center; }
+.dato-valor { display: block; font-size: 15px; font-variant-numeric: tabular-nums;
+text-align: center; }
 .dato-valor .pill { font-size: 13px; }
 .encaje { display: flex; align-items: center; gap: 8px; }
 .encaje .bar { flex: 1 1 auto; min-width: 36px; }
@@ -278,9 +291,11 @@ color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; min-he
   .tabla-cards .nw { white-space: normal; }
   .tabla-cards .bar { flex: 0 0 45%; }
   .tabla-cards td.c-num { text-align: right; }
+  .tabla-cards td.c-centro { text-align: right; }
   .tabla-cards td.c-num::before { margin-right: auto; }
   .tabla-cards { table-layout: auto; }
-  .tabla-cards td.c-razon { display: block; }
+  .tabla-cards td.c-razon { display: flex; flex-direction: column;
+    align-items: flex-start; height: auto; min-height: 4.6em; }
   .tabla-cards td.c-razon::before { display: block; margin-bottom: 4px; }
   .tabla-cards td.c-razon .motivo-sec { margin-top: 2px; }
 }
@@ -296,7 +311,10 @@ color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; min-he
   .tabla-cards .nw { white-space: normal; }
   .tabla-cards .bar { flex: 0 0 45%; }
   .tabla-cards { table-layout: auto; }
-  .tabla-cards td.c-razon { display: block; }
+  .tabla-cards td.c-num { text-align: right; }
+  .tabla-cards td.c-centro { text-align: right; }
+  .tabla-cards td.c-razon { display: flex; flex-direction: column;
+    align-items: flex-start; height: auto; min-height: 4.6em; }
   .tabla-cards td.c-razon::before { display: block; margin-bottom: 4px; }
   .tabla-cards td.c-razon .motivo-sec { margin-top: 2px; }
   .filtro-panel { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom));
@@ -428,19 +446,27 @@ def cabecera_seccion(id_seccion: str, titulo: str, hint: str,
         f'<div class="chips" id="chips-{id_html}" aria-live="polite" hidden></div>')
 
 
-def tarjeta_kpi(clave: str, valor: str, etiqueta: str, destino: str) -> str:
+def tarjeta_kpi(clave: str, valor: str, etiqueta: str, destino: str,
+                titulo: str | None = None) -> str:
     """KPI como enlace: lleva a la sección que explica ese número.
 
     Los KPI no filtran: un recuadro que promete "Títulos: 207" y a la vez
     oculta un filtro es peor que no tener nada. Solo navegan.
+
+    La etiqueta va en una sola línea (se recorta con puntos suspensivos si no
+    cabe) y el texto íntegro queda en el `title`: el recorte se lee bien y no
+    se pierde información.
     """
     id_html = html.escape(clave, quote=True)
     etiqueta_html = html.escape(etiqueta)
+    etiqueta_attr = html.escape(titulo or etiqueta, quote=True)
     ancla = html.escape(destino, quote=True)
     return (
         f'<a class="kpi" data-kpi="{id_html}" href="#{ancla}" '
+        f'title="{etiqueta_attr}" '
         f'aria-label="{etiqueta_html}: ir a su sección">'
-        f'<span class="n">{valor}</span><span class="l">{etiqueta_html}</span>'
+        f'<span class="n">{valor}</span>'
+        f'<span class="l">{etiqueta_html}</span>'
         '<span class="kpi-ir" aria-hidden="true">→</span></a>')
 
 
@@ -601,7 +627,8 @@ def generar(db_path: Path) -> str:
             + tarjeta_kpi("faltan", str(faltan), "Sin enriquecer", "lista")
             + tarjeta_kpi("exigencia",
                           str(exigencia) if exigencia is not None else "-",
-                          "Exigencia (tú − IMDb)", destino_perfil)
+                          "Exigencia (tú−IMDb)", destino_perfil,
+                          titulo="Exigencia (tu nota menos IMDb)")
             + tarjeta_kpi("enriquecidos", f"{enr_hechos}/{enr_total}",
                           "Enriquecidos", "lista")
             + '</div>')
@@ -649,7 +676,7 @@ def generar(db_path: Path) -> str:
                     f' <span style="color:var(--sub)">({r["year"] or "?"})</span></span>',
                     e(r["title_type"] or ""), str(r["imdb_rating"] or "-")],
                    etiquetas=ETIQUETAS_TABLA["top"],
-                   clases=["c-num", "c-titulo", "c-txt", "c-num"])
+                   clases=["c-num", "c-titulo", "c-centro", "c-num"])
         for r in top)
     gen_rows = "".join(
         fila_tabla([e(r["genero"]), str(r["titulos"]), str(r["nota_media"])],
@@ -697,7 +724,7 @@ def generar(db_path: Path) -> str:
                    if r["my_rating"] is not None else '<span class="np" title="No puntuado">NP</span>')]
         fila = fila_tabla(
             celdas, cls_first="t", etiquetas=ETIQUETAS_TABLA["lista"],
-            clases=["c-titulo", "c-txt", "c-num", "c-txt", "c-num", "c-num"]).replace(
+            clases=["c-titulo", "c-centro", "c-num", "c-txt", "c-num", "c-num"]).replace(
             "<tr>", f'<tr data-r="{clave}" data-tt="{e(r["tt"] if "tt" in r.keys() else "")}">', 1)
         todas_tr.append(fila)
     all_rows = "".join(todas_tr)
@@ -841,7 +868,8 @@ def generar(db_path: Path) -> str:
         fila_tabla([f'<span class="nw">{e(r["title_es"] or r["original_title"] or "")}'
                     f' <span style="color:var(--sub)">({r["year"] or "?"})</span></span>',
                     e(r["title_type"] or ""), str(r["imdb_rating"] or "-")],
-                   cls_first="t", etiquetas=ETIQUETAS_TABLA["seguimiento"])
+                   cls_first="t", etiquetas=ETIQUETAS_TABLA["seguimiento"],
+                   clases=["c-titulo", "c-centro", "c-num"])
         for r in pend)
 
     dec_rows = "".join(
@@ -1074,7 +1102,7 @@ def generar(db_path: Path) -> str:
     top: [
       { etiqueta: 'Tu nota', clase: 'c-num', valor: (f) => pill(f.nota) },
       { etiqueta: 'Título', clase: 't c-titulo', valor: tituloCelda },
-      { etiqueta: 'Tipo', clase: 'c-txt', valor: (f) => f.tipo || '-' },
+      { etiqueta: 'Tipo', clase: 'c-centro', valor: (f) => f.tipo || '-' },
       { etiqueta: 'IMDb', clase: 'c-num', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) }
     ],
     joyas: [
@@ -1091,7 +1119,7 @@ def generar(db_path: Path) -> str:
     ],
     lista: [
       { etiqueta: 'Título', clase: 't c-titulo', valor: (f) => f.titulo },
-      { etiqueta: 'Tipo', clase: 'c-txt', valor: (f) => f.tipo || '-' },
+      { etiqueta: 'Tipo', clase: 'c-centro', valor: (f) => f.tipo || '-' },
       { etiqueta: 'Año', clase: 'c-num', valor: (f) => (f.year == null ? '-' : texto(f.year)) },
       { etiqueta: 'Géneros', clase: 'c-txt', valor: (f) => mostrarGeneros(f.generos) },
       { etiqueta: 'IMDb', clase: 'c-num', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) },
@@ -1099,7 +1127,7 @@ def generar(db_path: Path) -> str:
     ],
     seguimiento: [
       { etiqueta: 'Título', clase: 't c-titulo', valor: tituloCelda },
-      { etiqueta: 'Tipo', clase: 'c-txt', valor: (f) => f.tipo || '-' },
+      { etiqueta: 'Tipo', clase: 'c-centro', valor: (f) => f.tipo || '-' },
       { etiqueta: 'IMDb', clase: 'c-num', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) }
     ],
     decadas: [
@@ -1886,12 +1914,12 @@ def generar(db_path: Path) -> str:
 {para_ti_html}
 {perfil_html}
 <section id="seccion-top" aria-labelledby="titulo-top">{top_head}
-<table class="paginada tabla-cards tabla-centrada" id="tabla-top" data-seccion="top"><colgroup><col style="width:92px"><col><col style="width:150px"><col style="width:86px"></colgroup><thead><tr><th class="c-num">Tu nota</th><th class="c-titulo">Título</th><th class="c-txt">Tipo</th><th class="c-num">IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
+<table class="paginada tabla-cards" id="tabla-top" data-seccion="top"><colgroup><col style="width:92px"><col><col style="width:150px"><col style="width:86px"></colgroup><thead><tr><th class="c-num">Tu nota</th><th class="c-titulo">Título</th><th class="c-centro">Tipo</th><th class="c-num">IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
 <div class="grid2">
 <section id="seccion-joyas" aria-labelledby="titulo-joyas">{joyas_head}
-<table class="paginada tabla-tarjeta" id="tabla-joyas" data-seccion="joyas"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{joya_rows}</tbody></table></section>
+<table class="paginada tabla-tarjeta" id="tabla-joyas" data-seccion="joyas"><thead><tr><th class="c-num">Tú</th><th>Título</th><th class="c-num">IMDb</th><th class="c-num">Dif</th></tr></thead><tbody>{joya_rows}</tbody></table></section>
 <section id="seccion-decepciones" aria-labelledby="titulo-decepciones">{decep_head}
-<table class="paginada tabla-tarjeta" id="tabla-decepciones" data-seccion="decepciones"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{decep_rows}</tbody></table></section>
+<table class="paginada tabla-tarjeta" id="tabla-decepciones" data-seccion="decepciones"><thead><tr><th class="c-num">Tú</th><th>Título</th><th class="c-num">IMDb</th><th class="c-num">Dif</th></tr></thead><tbody>{decep_rows}</tbody></table></section>
 </div>
 <div class="grid2">
 <section id="seccion-generos" aria-labelledby="titulo-generos">{generos_head}
@@ -1907,9 +1935,9 @@ def generar(db_path: Path) -> str:
 </div>
 <section id="lista" aria-labelledby="titulo-lista">{lista_head}
 <input class="search" id="q" type="search" placeholder="Filtra por título o género…" aria-label="Filtrar lista completa">
-<table class="paginada tabla-cards" id="tabla-todas" data-seccion="lista"><colgroup><col><col style="width:150px"><col style="width:72px"><col><col style="width:78px"><col style="width:104px"></colgroup><thead><tr><th class="c-titulo">Título</th><th class="c-txt">Tipo</th><th class="c-num">Año</th><th class="c-txt">Géneros</th><th class="c-num">IMDb</th><th>Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
+<table class="paginada tabla-cards" id="tabla-todas" data-seccion="lista"><colgroup><col><col style="width:150px"><col style="width:72px"><col><col style="width:78px"><col style="width:104px"></colgroup><thead><tr><th class="c-titulo">Título</th><th class="c-centro">Tipo</th><th class="c-num">Año</th><th class="c-txt">Géneros</th><th class="c-num">IMDb</th><th class="c-num">Tu nota</th></tr></thead><tbody>{all_rows}</tbody></table></section>
 <section id="seccion-seguimiento" aria-labelledby="titulo-seguimiento">{seguimiento_head}
-<table class="paginada tabla-cards" id="tabla-seguimiento" data-seccion="seguimiento"><colgroup><col><col style="width:150px"><col style="width:86px"></colgroup><thead><tr><th class="c-titulo">Título</th><th class="c-txt">Tipo</th><th class="c-num">IMDb</th></tr></thead><tbody>{pend_rows}</tbody></table></section>
+<table class="paginada tabla-cards" id="tabla-seguimiento" data-seccion="seguimiento"><colgroup><col><col style="width:150px"><col style="width:86px"></colgroup><thead><tr><th class="c-titulo">Título</th><th class="c-centro">Tipo</th><th class="c-num">IMDb</th></tr></thead><tbody>{pend_rows}</tbody></table></section>
 <div class="overlay" id="overlay" hidden><div class="ficha" role="dialog" aria-modal="true" aria-labelledby="ficha-titulo">
 <button class="ficha-cerrar" id="ficha-cerrar" aria-label="Cerrar ficha">×</button>
 <div id="ficha-contenido"></div></div></div>

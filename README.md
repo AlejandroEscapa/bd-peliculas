@@ -103,13 +103,21 @@ En Linux o macOS, cambia `set` por `export` y `start` por `open`. Sin `OMDB_API_
 ## Cómo está maquetado
 
 Un único fichero HTML, sin framework ni build, con un sistema de columnas
-consistente: las cifras van a la derecha con ancho fijo (`tabular-nums`) y
-nunca se parten, los títulos se recortan con elipsis y las secciones de
-información son listas simples. "Joyas" y "Decepciones" son tarjetas (título
-arriba, datos alineados debajo); el resto, tablas.
+consistente: **todo va centrado menos los títulos, el "por qué" y los
+géneros** (son los que ocupan). Las cifras tienen ancho fijo
+(`tabular-nums`) y nunca se parten, los títulos se recortan con elipsis y las
+secciones de información son listas simples. "Joyas" y "Decepciones" son
+tarjetas (título arriba, datos centrados debajo); el resto, tablas.
 
 Los KPI de arriba son enlaces: llevan a la sección que explica ese número, sin
-filtrar nada.
+filtrar nada. Cada tarjeta es una rejilla de dos filas (número y flecha
+arriba, etiqueta abajo) y la etiqueta vive en **una sola línea** que ocupa
+todo el ancho: si no cabe, se recorta con puntos suspensivos y el texto
+íntegro queda en el `title`.
+
+"Para ti" tiene **todas las filas a la misma altura**: la celda del motivo
+reserva el hueco del motivo más largo (dos líneas) más la línea del botón
+"+N más", así que la tabla se lee como una lista y el botón nunca se solapa.
 
 ## Publicar sin pisar
 

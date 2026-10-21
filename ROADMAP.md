@@ -43,6 +43,27 @@ frescura el resto de campos de TMDB. Fix en `src/proveedores/tmdb.py`
   filtro estándar (tipo, década, tu nota y orden). El motor agrega en cliente
   los títulos que pasan el filtro.
 
+## Alineación y KPI (2026-10-22, sobre el rediseño)
+
+- **Todo centrado menos títulos, "por qué" y géneros**: son los que ocupan. Las
+  cifras (`c-num`) pasan de alinear a la derecha a centrarse — tu nota, IMDb,
+  año, nº de títulos, media y diferencia — y el texto corto ("Tipo") usa la
+  clase nueva `c-centro`. Se va la clase `tabla-centrada`, que ya solo
+  servía para centrarlas en una tabla.
+- **KPI que ocupan su espacio**: cada tarjeta es una rejilla de dos filas
+  (número y flecha arriba, etiqueta abajo) y la etiqueta vive en **una sola
+  línea** que llega hasta los márgenes. Se acaba el `min-height: 2.6em` que
+  reservaba una segunda línea vacía. Si la etiqueta no cabe, se recorta con
+  puntos suspensivos y el texto íntegro queda en el `title` (y el
+  `aria-label` no pierde información). "Exigencia (tú − IMDb)" pasa a
+  "Exigencia (tú−IMDb)" para que quepa entera.
+- **"Para ti" con todas las filas a la misma altura**: la celda del motivo
+  tiene alto fijo (6.4em, padding incluido) y es una columna flexible: el
+  motivo ocupa todo el ancho y el botón "+N más" va en su propia línea, con
+  `space-between` para que todos los botones caigan a la misma altura. El
+  motivo se corta a dos líneas (con `…`) para que el botón nunca se solape.
+  Al abrir los motivos secundarios, la celda crece (`height: auto`).
+
 ## Publicar sin perder nada (2026-10-21)
 
 - `scripts/publicar.py` sustituye al `generar_vista.py` + `git commit` a mano: copia la base, genera a un temporal, **compara con el snapshot publicado** y solo lo sustituye si no pierde títulos, valoradas, sinopsis, pósteres ni reparto. Si pierde algo, sale con código 3 sin tocar nada.
