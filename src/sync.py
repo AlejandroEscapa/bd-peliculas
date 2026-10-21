@@ -71,7 +71,13 @@ def _get_or_create_person(cur: sqlite3.Cursor, name: str) -> int:
 
 
 def _sync_genres(cur: sqlite3.Cursor, tt: str, genres: list[str]) -> bool:
-    """Sincroniza géneros del CSV (lista completa por título). Devuelve si cambió."""
+    """Sincroniza géneros del CSV (lista completa por título). Devuelve si cambió.
+
+    Celda vacía = dato desconocido, no "cero géneros": en ese caso no se
+    toca nada. Vacío en el CSV jamás borra lo que ya había.
+    """
+    if not genres:
+        return False
     for g in genres:
         cur.execute("INSERT OR IGNORE INTO genres (name) VALUES (?)", (g,))
     actual = {r["genre"] for r in cur.execute(
@@ -87,7 +93,12 @@ def _sync_genres(cur: sqlite3.Cursor, tt: str, genres: list[str]) -> bool:
 
 
 def _sync_directors(cur: sqlite3.Cursor, tt: str, directors: list[str]) -> bool:
-    """Directores del CSV (fuente imdb_csv). Solo toca rol director con esa fuente."""
+    """Directores del CSV (fuente imdb_csv). Solo toca rol director con esa fuente.
+
+    Igual que los géneros: si la celda viene vacía, no se borra nada.
+    """
+    if not directors:
+        return False
     ids_deseados = {_get_or_create_person(cur, d) for d in directors}
     actuales = {r["person_id"] for r in cur.execute(
         "SELECT person_id FROM title_credits "

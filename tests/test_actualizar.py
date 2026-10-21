@@ -104,6 +104,43 @@ class TestActualizar(unittest.TestCase):
         finally:
             conn.close()
 
+    def _csv_vaciando(self, tt: str, columna: str, valor: str) -> Path:
+        """Copia del fixture con una celda concreta vaciada."""
+        otro = Path(self.tmp.name) / f"vacio_{columna}.csv"
+        lineas = FIXTURE.read_text(encoding="utf-8").splitlines()
+        for i, ln in enumerate(lineas):
+            if tt in ln:
+                lineas[i] = ln.replace(f'"{valor}"', '""')
+        otro.write_text("\n".join(lineas) + "\n", encoding="utf-8")
+        return otro
+
+    def test_generos_vacios_no_borran_los_generos(self):
+        """Celda Genres vacía = dato desconocido: no borra lo que había."""
+        import_csv(FIXTURE, self.db_path)
+        import_csv(self._csv_vaciando("tt0068646", "Genres", "Crimen, Drama"),
+                   self.db_path)
+        conn = get_connection(self.db_path)
+        try:
+            generos = [r["genre"] for r in conn.execute(
+                "SELECT genre FROM title_genres WHERE tt = 'tt0068646' ORDER BY genre")]
+            self.assertEqual(generos, ["Crimen", "Drama"])
+        finally:
+            conn.close()
+
+    def test_directores_vacios_no_borran_los_directores(self):
+        """Celda Directores vacía = dato desconocido: no borra lo que había."""
+        import_csv(FIXTURE, self.db_path)
+        import_csv(self._csv_vaciando("tt0111161", "Directors", "Frank Darabont"),
+                   self.db_path)
+        conn = get_connection(self.db_path)
+        try:
+            dirs = [r["name"] for r in conn.execute(
+                "SELECT p.name FROM title_credits c JOIN people p ON p.id = c.person_id "
+                "WHERE c.tt = 'tt0111161' AND c.role = 'director'")]
+            self.assertEqual(dirs, ["Frank Darabont"])
+        finally:
+            conn.close()
+
 
 if __name__ == "__main__":
     unittest.main()
