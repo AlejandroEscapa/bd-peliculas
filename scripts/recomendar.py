@@ -35,6 +35,11 @@ def main() -> int:
     ap.add_argument("--json", action="store_true", help="Salida en JSON")
     args = ap.parse_args()
 
+    if not Path(args.db).exists():
+        print(f"error: no existe la base {args.db}", file=sys.stderr)
+        print("       (si querias la semilla: python scripts/semilla.py)", file=sys.stderr)
+        return 2
+
     conn = get_connection(args.db)
     try:
         if args.perfil:

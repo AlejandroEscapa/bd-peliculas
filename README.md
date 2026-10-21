@@ -76,6 +76,11 @@ python scripts/scrapear_peliculas.py --proveedor src.proveedores.combinado:Prove
 # 5. Genera el panel y ábrelo
 python scripts/generar_vista.py
 start preview/dashboard.html
+
+# ...o trabaja sobre una base semilla, sin la tuya (notas sintéticas):
+python scripts/semilla.py
+python scripts/generar_vista.py --db data/semilla.db --salida preview/semilla.html
+start preview/semilla.html
 ```
 
 En Linux o macOS, cambia `set` por `export` y `start` por `open`. Sin `OMDB_API_KEY` el proveedor combinado funciona solo con TMDB.
@@ -88,6 +93,7 @@ En Linux o macOS, cambia `set` por `export` y `start` por `open`. Sin `OMDB_API_
 | `python scripts/scrapear_peliculas.py --proveedor ... --limite N --delay S` | Rellena huecos con pausa entre peticiones |
 | `python scripts/derivar_relaciones.py` | Deduce relaciones de saga desde las colecciones |
 | `python scripts/recomendar.py` | Ordena tus pendientes por encaje y explica el porqué |
+| `python scripts/semilla.py` | Crea `data/semilla.db`: base de trabajo con notas sintéticas |
 | `python scripts/generar_vista.py` | Regenera `preview/dashboard.html` |
 | `python scripts/auto_vista.py --una-vez` | Regenera el panel una vez; sin `--una-vez`, vigila la BD |
 | `python scripts/backup.py` | Vuelca la base a SQL + manifiesto JSON |
@@ -113,7 +119,17 @@ python -m unittest discover -s tests
 
 ## Demo y datos
 
-La demo pública usa un snapshot de un catálogo real. **Las notas son personales** y el fichero de la base no se versiona (`data/`, `backups/` y `*.db` están en `.gitignore`).
+Hay dos paneles:
+
+- `/` — **tu catálogo**, con tus notas. Es un snapshot de un catálogo real y **las notas son personales**; el fichero de la base no se versiona (`data/`, `backups/` y `*.db` están en `.gitignore`).
+- `/demo` — **la demo reproducible**: los mismos títulos y sinopsis, pero con **notas sintéticas** y las sagas detectadas. La construye `scripts/semilla.py` a partir del snapshot, así que cualquiera que clone el repo puede regenerarla y probar la interfaz sin base de datos ni red.
+
+```bash
+python scripts/semilla.py            # -> data/semilla.db (notas sintéticas)
+python scripts/generar_vista.py --db data/semilla.db --salida preview/semilla.html
+```
+
+Con `--notas reales` la semilla reproduce tu panel tal cual, para comparar cambios antes y después.
 
 Para reproducir el panel con tus datos, importa tu propio export. El repo no incluye el CSV ni la base.
 

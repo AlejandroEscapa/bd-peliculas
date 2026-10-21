@@ -36,6 +36,11 @@ def main() -> int:
     ap.add_argument("--db", default=str(DEFAULT_DB_PATH), help="Ruta a la base SQLite")
     args = ap.parse_args()
 
+    if not Path(args.db).exists():
+        print(f"error: no existe la base {args.db}", file=sys.stderr)
+        print("       (si querias la semilla: python scripts/semilla.py)", file=sys.stderr)
+        return 2
+
     init_db(args.db)
     resumen = derivar_relaciones_coleccion(args.db)
     print(json.dumps(resumen, indent=2, ensure_ascii=False))

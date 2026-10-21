@@ -5,6 +5,11 @@ Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, fic
 Tuberías conectadas (2026-10-20): colecciones de TMDB (`belongs_to_collection`, 0 peticiones extra) en `title_collections`, con relaciones saga derivadas en `title_relations`; `schema_version` ya se registra al aplicar el esquema. La ficha muestra el bloque "Colección" con las partes de tu catálogo, por año y con tu nota.
 Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
 
+## Base semilla (2026-10-21)
+
+- `scripts/semilla.py` construye `data/semilla.db` a partir del snapshot publicado: los mismos 207 títulos con **notas sintéticas** (deterministas, correlacionadas con el IMDb y con una preferencia por géneros) y las **sagas reales** detectadas por título. Sirve para iterar la interfaz sin la base real ni red, y para la demo pública en `/demo`.
+- `preview/semilla.html` es el artefacto de esa demo; se regenera con `python scripts/semilla.py && python scripts/generar_vista.py --db data/semilla.db --salida preview/semilla.html`.
+
 ## PENDIENTES AL LLEGAR A CASA (2026-10-20)
 
 > **Handoff completo** (guion, verificaciones, mapa del código, decisiones
