@@ -50,13 +50,27 @@ Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
 > **Handoff completo** (guion, verificaciones, mapa del código, decisiones
 > tomadas y trampas conocidas): [`docs/superpowers/plans/2026-10-20-handoff.md`](docs/superpowers/plans/2026-10-20-handoff.md).
 
-> Estado al dejar el PC: **el código está publicado** en `origin/main`
-> (suite 94/94 en verde). Lo que **no** está publicado es el snapshot:
-> `preview/dashboard.html` sigue siendo el viejo, porque regenerarlo exige
-> tu `data/catalogo.db`, que no existe fuera de tu máquina. Handoff completo:
+> **Todo está commiteado y pusheado** (`main` = `origin/main`), suite
+> 121/121 en verde, y **la vista ya está publicada**: `preview/dashboard.html`
+> lleva el rediseño, el motor depurado y los KPI navegables.
+>
+> **Pendiente de usar tu base real.** El snapshot publicado se regeneró desde
+> una reconstrucción fiel del `catalogo-data` anterior (la base no existe fuera
+> de tu máquina). La equivalencia está comprobada: mismos 207 tt, mismas
+> notas, mismos géneros y directores; las tablas de actores, directores, tus
+> favoritas, joyas, decepciones, lista y seguimiento salen idénticas fila a
+> fila; y el guard de `publicar.py` lo da por bueno (207 títulos, 148
+> valoradas, 177 con sinopsis/póster/reparto, 141 directores y 427 actores
+> distintos, antes y después).
+>
+> Lo único que le falta al panel publicado son **las sagas**: `title_collections`
+> está vacía porque el scraper no se ha ejecutado desde que existe el hueco
+> `coleccion`. Se arregla en tu máquina (punto 1). Handoff completo:
 > `docs/superpowers/plans/2026-10-20-handoff.md`.
 
-### 1. Publicar lo que ya está hecho (~20 min)
+### 1. Regenerar desde tu base real (~25 min)
+
+Ya está publicado; esto lo deja **definitivo** (y de paso añade las sagas).
 
 - [ ] **Rellenar el hueco `coleccion`** — el scraper lee
       `belongs_to_collection` de la respuesta de detalle que TMDB ya te
