@@ -108,6 +108,9 @@ nunca se parten, los títulos se recortan con elipsis y las secciones de
 información son listas simples. "Joyas" y "Decepciones" son tarjetas (título
 arriba, datos alineados debajo); el resto, tablas.
 
+Los KPI de arriba son enlaces: llevan a la sección que explica ese número, sin
+filtrar nada.
+
 ## Publicar sin pisar
 
 `preview/dashboard.html` es un artefacto commiteado. Regenerarlo desde una base

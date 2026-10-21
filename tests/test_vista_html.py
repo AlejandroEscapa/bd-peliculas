@@ -92,10 +92,13 @@ class TestVistaHtml(unittest.TestCase):
         for marcador in ("@container", "clamp(", "100dvh", "[hidden]",
                          "prefers-reduced-motion", "env(safe-area-inset-bottom)"):
             self.assertIn(marcador, pagina)
-        self.assertGreaterEqual(pagina.count('class="filtro-btn"'), 10)
+        # 7 botones de filtro: las secciones con filtro (los KPI ya no lo llevan).
+        self.assertGreaterEqual(pagina.count('class="filtro-btn"'), 7)
         for marcador in ('data-kpi="media"', 'data-seccion="top"',
                          'aria-haspopup="dialog"', 'class="filtro-panel"'):
             self.assertIn(marcador, pagina)
+        # Los KPI no llevan filtro: son enlaces.
+        self.assertNotIn('data-kpi-filtro', pagina)
 
     def test_ficha_sinopsis_al_final_y_ancho_completo(self):
         pagina = self._generar_con_fixture()
@@ -177,9 +180,11 @@ class TestVistaHtml(unittest.TestCase):
                          "Exigencia (tú − IMDb)", "Enriquecidos"):
             self.assertIn(marcador, pagina)
         # Exigencia = media de (tu nota - IMDb): (10-9.2 + 9-9.0) / 2 = 0.4
-        self.assertIn('<div class="n">0.4</div>', pagina)
+        self.assertIn('<span class="n">0.4</span>', pagina)
         # El fixture no trae sinopsis, póster ni reparto: 0 de 3 enriquecidos.
-        self.assertIn('<div class="n">0/3</div>', pagina)
+        self.assertIn('<span class="n">0/3</span>', pagina)
+        # Y ahora son enlaces navegables, no botones con filtro.
+        self.assertIn('class="kpi" data-kpi="exigencia"', pagina)
 
     def _generar_con_colecciones(self, *tts):
         """Página con tts dentro de una misma colección de saga."""
@@ -252,6 +257,32 @@ class TestVistaHtml(unittest.TestCase):
         pagina = self._generar_con_fixture()
         self.assertNotIn('id="seccion-perfil"', pagina)
 
+    def test_notas_por_decada_es_filtrable(self):
+        """Décadas usa el filtro estandar, como las demas secciones."""
+        pagina = self._generar_con_fixture()
+        self.assertIn('data-filtro="decadas"', pagina)
+        self.assertIn('id="filtro-decadas"', pagina)
+        self.assertIn('id="chips-decadas"', pagina)
+        # Y el motor sabe agregarlas en cliente.
+        self.assertIn("renderDecadas", pagina)
+        self.assertIn("decada_asc", pagina)
+        self.assertIn("decada_desc", pagina)
+
+    def test_para_ti_tiene_altura_uniforme_y_motivos_plegables(self):
+        pagina = self._generar_con_motor()
+        # La celda del motivo reserva el alto del motivo mas largo.
+        self.assertIn("min-height", pagina)
+        # Y los motivos secundarios se pliegan tras un boton.
+        self.assertIn("motivo-mas", pagina)
+        self.assertIn(".motivo-sec { display: none", pagina)
+        self.assertIn(".c-razon.abierta .motivo-sec { display: block", pagina)
+
+    def test_tus_favoritas_tiene_las_cifras_centradas(self):
+        pagina = self._generar_con_fixture()
+        self.assertIn("tabla-centrada", pagina)
+        self.assertIn(".tabla-centrada th.c-num, .tabla-centrada td.c-num { text-align: center; }",
+                       pagina)
+
     def test_coleccion_en_el_catalogo_json(self):
         pagina = self._generar_con_colecciones("tt0111161", "tt0068646")
         self.assertIn('"coleccion"', pagina)
@@ -267,18 +298,20 @@ class TestVistaHtml(unittest.TestCase):
                          "abrirFicha(p.tt)", ".saga-item {", "'Colección'"):
             self.assertIn(marcador, pagina)
 
-    def test_boton_kpi_aplica_preset_en_lista(self):
+    def test_los_kpi_navegan_y_no_filtran(self):
+        """Los KPI son enlaces a su sección: sin embudo y sin filtros."""
+        import re
         pagina = self._generar_con_fixture()
-        for clave in ("total", "valoradas", "pendientes", "faltan",
-                      "enriquecidos"):
-            self.assertIn(f'data-kpi-filtro="{clave}"', pagina)
-        self.assertIn("PRESET_KPI", pagina)
-        self.assertIn("aplicarPresetKPI", pagina)
-        # Tu nota media y Exigencia son promedios: sin preset, botón off.
-        self.assertIn('data-kpi-filtro="media" aria-label="Filtrar Tu nota media" disabled',
-                       pagina)
-        self.assertIn('data-kpi-filtro="exigencia"', pagina)
-        self.assertIn("Exigencia (tú − IMDb)", pagina)
+        self.assertNotIn("data-kpi-filtro", pagina)
+        self.assertNotIn("PRESET_KPI", pagina)
+        self.assertNotIn("aplicarPresetKPI", pagina)
+        self.assertIn("navegarA(destino)", pagina)
+        for clave in ("total", "valoradas", "pendientes", "media", "faltan",
+                      "exigencia", "enriquecidos"):
+            self.assertIn(f'data-kpi="{clave}"', pagina)
+        # Cada KPI apunta a una sección que existe en la página.
+        for href in re.findall(r'class="kpi"[^>]*href="#([^"]+)"', pagina):
+            self.assertIn(f'id="{href}"', pagina, href)
 
     def test_seccion_notas_por_decada(self):
         pagina = self._generar_con_fixture()
@@ -306,7 +339,7 @@ class TestVistaHtml(unittest.TestCase):
             self.assertEqual(bloque.count("</th>"), 3, tabla)
             # Sin botón de filtro muerto en las secciones de información.
             self.assertNotIn('data-filtro="generos"', pagina)
-            self.assertNotIn('data-filtro="decadas"', pagina)
+            self.assertNotIn('data-filtro="actores"', pagina)
 
     def test_las_tablas_numericas_alinean_a_la_derecha(self):
         pagina = self._generar_con_fixture()

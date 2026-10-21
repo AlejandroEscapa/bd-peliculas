@@ -53,13 +53,19 @@ border: none; background: #fff; padding: 8px 10px; cursor: pointer; text-align: 
 .kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
 gap: 10px; margin: 24px 0; }
 .kpi { position: relative; min-width: 0; background: var(--card);
-border-radius: var(--radius); padding: 13px 40px 13px 13px;
-display: flex; flex-direction: column; justify-content: space-between; }
+border-radius: var(--radius); padding: 13px 34px 13px 13px;
+display: flex; flex-direction: column; justify-content: space-between;
+text-decoration: none; color: inherit;
+transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+.kpi:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.07); }
+.kpi:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .kpi .n { font-size: clamp(19px, 2.9vw, 24px); font-weight: 700; letter-spacing: -0.02em;
 white-space: nowrap; font-variant-numeric: tabular-nums; line-height: 1.15; }
 .kpi .l { color: var(--sub); font-size: 11px; margin-top: 6px; line-height: 1.3;
 min-height: 2.6em; }
-.kpi .filtro-wrap { position: absolute; top: 2px; right: 2px; }
+.kpi .kpi-ir { position: absolute; top: 10px; right: 12px; color: var(--line);
+font-size: 13px; transition: color .15s ease, transform .15s ease; }
+.kpi:hover .kpi-ir { color: var(--accent); transform: translateX(2px); }
 section { position: relative; background: var(--card); border-radius: var(--radius);
 padding: 16px; margin-bottom: 14px; container-type: inline-size; }
 section h2 { font-size: clamp(18px, 3vw, 21px); letter-spacing: -0.01em;
@@ -78,6 +84,10 @@ td { padding: 11px 12px; border-bottom: 1px solid var(--line);
 vertical-align: top; }
 tr:last-child td { border-bottom: none; }
 tbody tr[data-tt]:hover td { background: var(--bg); }
+/* En las tablas cortas, las cifras van centradas: una columna estrecha
+   alineada a la derecha parece perdida. */
+.tabla-centrada th.c-num, .tabla-centrada td.c-num { text-align: center; }
+.tabla-centrada td.c-num .pill { display: inline-block; }
 /* Tipos de columna: una cifra vive a la derecha, con cifras de ancho fijo
    (tabular-nums), y nunca se parte. */
 .c-num { text-align: right; white-space: nowrap;
@@ -85,11 +95,22 @@ font-variant-numeric: tabular-nums; }
 .c-titulo { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .c-razon { color: var(--sub); font-size: 13px; line-height: 1.5; }
 .c-encaje { text-align: left; }
-.motivo { color: var(--ink); }
-.motivo-sec { display: block; color: var(--sub); font-size: 12px;
+/* Altura uniforme: el hueco se calcula con el motivo que mas ocupa, para
+   que todas las filas se sientan igual. */
+.c-razon { min-height: 4.6em; }
+.motivo { color: var(--ink); display: -webkit-box; -webkit-box-orient: vertical;
+-webkit-line-clamp: 3; overflow: hidden; }
+.motivo-sec { display: none; color: var(--sub); font-size: 12px;
 line-height: 1.45; }
 .motivo-sec::before { content: "— "; color: var(--line); }
+.c-razon.abierta .motivo { -webkit-line-clamp: unset; }
+.c-razon.abierta .motivo-sec { display: block; }
 .motivo-vacio { color: var(--sub); }
+.motivo-mas { display: inline-block; margin-left: 6px; border: 1px solid var(--line);
+background: #fff; color: var(--sub); border-radius: 999px; padding: 1px 8px;
+font-size: 11px; font-weight: 600; cursor: pointer; vertical-align: 1px; }
+.motivo-mas:hover { border-color: var(--accent); color: var(--accent); }
+.motivo-mas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .pill { display: inline-block; background: var(--accent); color: #fff;
 border-radius: 999px; padding: 2px 10px; font-weight: 600; font-size: 13px; }
 .bar { height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; }
@@ -407,23 +428,20 @@ def cabecera_seccion(id_seccion: str, titulo: str, hint: str,
         f'<div class="chips" id="chips-{id_html}" aria-live="polite" hidden></div>')
 
 
-def tarjeta_kpi(clave: str, valor: str, etiqueta: str,
-                filtrable: bool = True) -> str:
-    """KPI con botón de preset; el preset se aplica en Lista completa.
+def tarjeta_kpi(clave: str, valor: str, etiqueta: str, destino: str) -> str:
+    """KPI como enlace: lleva a la sección que explica ese número.
 
-    Los KPIs que son un promedio puro (tu nota media, exigencia) no tienen
-    equivalencia en una faceta: su botón sale deshabilitado.
+    Los KPI no filtran: un recuadro que promete "Títulos: 207" y a la vez
+    oculta un filtro es peor que no tener nada. Solo navegan.
     """
     id_html = html.escape(clave, quote=True)
     etiqueta_html = html.escape(etiqueta)
-    deshabilitado = "" if filtrable else " disabled"
+    ancla = html.escape(destino, quote=True)
     return (
-        f'<div class="kpi" data-kpi="{id_html}">'
-        f'<div class="n">{valor}</div><div class="l">{etiqueta_html}</div>'
-        '<div class="filtro-wrap">'
-        f'<button type="button" class="filtro-btn" data-kpi-filtro="{id_html}" '
-        f'aria-label="Filtrar {etiqueta_html}"{deshabilitado}>'
-        f'{ICONO_FILTRO}</button></div></div>')
+        f'<a class="kpi" data-kpi="{id_html}" href="#{ancla}" '
+        f'aria-label="{etiqueta_html}: ir a su sección">'
+        f'<span class="n">{valor}</span><span class="l">{etiqueta_html}</span>'
+        '<span class="kpi-ir" aria-hidden="true">→</span></a>')
 
 
 def _iniciales(titulo: str) -> str:
@@ -552,18 +570,24 @@ def generar(db_path: Path) -> str:
     c.close()
 
     e = html.escape
+    # "Mi perfil" solo se pinta si hay algo que contar; si no, esos KPI
+    # llevan a la lista completa en vez de a un ancla que no existe.
+    hay_perfil = bool(perfil_resumen["alto"] or perfil_resumen["bajo"])
+    destino_perfil = "seccion-perfil" if hay_perfil else "lista"
     kpis = ('<div class="kpis">'
-            + tarjeta_kpi("total", str(total), "Títulos")
-            + tarjeta_kpi("valoradas", str(valoradas), "Valoradas por ti")
-            + tarjeta_kpi("pendientes", str(pendientes), "En seguimiento")
+            + tarjeta_kpi("total", str(total), "Títulos", "lista")
+            + tarjeta_kpi("valoradas", str(valoradas), "Valoradas por ti",
+                          "seccion-top")
+            + tarjeta_kpi("pendientes", str(pendientes), "En seguimiento",
+                          "seccion-seguimiento")
             + tarjeta_kpi("media", str(media or "-"), "Tu nota media",
-                          filtrable=False)
-            + tarjeta_kpi("faltan", str(faltan), "Sin enriquecer")
+                          destino_perfil)
+            + tarjeta_kpi("faltan", str(faltan), "Sin enriquecer", "lista")
             + tarjeta_kpi("exigencia",
                           str(exigencia) if exigencia is not None else "-",
-                          "Exigencia (tú − IMDb)", filtrable=False)
+                          "Exigencia (tú − IMDb)", destino_perfil)
             + tarjeta_kpi("enriquecidos", f"{enr_hechos}/{enr_total}",
-                          "Enriquecidos")
+                          "Enriquecidos", "lista")
             + '</div>')
     posters_head = cabecera_seccion(
         "posters", "Tus favoritas, en cartel",
@@ -585,9 +609,9 @@ def generar(db_path: Path) -> str:
     actores_head = cabecera_simple(
         "actores", "Actores de confianza",
         "Tu nota media por actor (mínimo 2 títulos). 15 visibles, carga 15 más.")
-    decadas_head = cabecera_simple(
+    decadas_head = cabecera_seccion(
         "decadas", "Notas por década",
-        "Títulos y nota media IMDb por década.")
+        "Títulos y nota media IMDb por década. Filtra por tipo o por tu nota.")
     lista_head = cabecera_seccion(
         "lista", "Lista completa",
         f"Los {len(todas)} títulos. Filtra sin recargar. 15 visibles, carga 15 más.")
@@ -664,12 +688,20 @@ def generar(db_path: Path) -> str:
     ntotal = len(todas)
     # Cola recomendada: pendientes ordenados por encaje, con su porqué.
     def _motivos(razones: list[str]) -> str:
-        """El primer motivo pesa; los demas son contexto y van apagados."""
+        """El primer motivo pesa; los demas quedan plegados tras "+N más".
+
+        Todas las filas miden lo mismo (el hueco del motivo mas largo) para
+        que la tabla se lea como una lista y no como un staircase.
+        """
         if not razones:
             return '<span class="motivo-vacio">Sin motivo</span>'
         principal = f'<span class="motivo">{e(razones[0])}</span>'
         resto = "".join(f'<span class="motivo-sec">{e(r)}</span>' for r in razones[1:])
-        return principal + resto
+        if not resto:
+            return principal
+        boton = ('<button type="button" class="motivo-mas" aria-expanded="false">'
+                 f'+{len(razones) - 1} más</button>')
+        return principal + boton + resto
 
     para_ti_rows = "".join(
         fila_tabla([
@@ -952,7 +984,11 @@ def generar(db_path: Path) -> str:
     imdb_desc: { etiqueta: 'IMDb (mayor primero)',
       cmp: (a, b) => (b.imdb == null ? -1 : b.imdb) - (a.imdb == null ? -1 : a.imdb) || a.titulo.localeCompare(b.titulo, 'es') },
     year_desc: { etiqueta: 'Año (más reciente)',
-      cmp: (a, b) => (b.year || 0) - (a.year || 0) || a.titulo.localeCompare(b.titulo, 'es') }
+      cmp: (a, b) => (b.year || 0) - (a.year || 0) || a.titulo.localeCompare(b.titulo, 'es') },
+    decada_asc: { etiqueta: 'Década (más antigua)',
+      cmp: (a, b) => String(a.decada).localeCompare(String(b.decada)) },
+    decada_desc: { etiqueta: 'Década (más reciente)',
+      cmp: (a, b) => String(b.decada).localeCompare(String(a.decada)) }
   };
 
   const SECCIONES = {
@@ -978,6 +1014,11 @@ def generar(db_path: Path) -> str:
       facetas: ['tipo', 'genero', 'decada', 'nota', 'imdb', 'diferencia', 'orden'],
       ordenes: ['diferencia_asc', 'nota_desc', 'titulo_asc'], ordenDefecto: 'diferencia_asc'
     },
+    decadas: {
+      tabla: 'tabla-decadas', base: () => true, limite: 0,
+      facetas: ['tipo', 'decada', 'nota', 'orden'],
+      ordenes: ['decada_asc', 'decada_desc'], ordenDefecto: 'decada_asc'
+    },
     lista: {
       tabla: 'tabla-todas', base: () => true, limite: 0,
       facetas: ['tipo', 'genero', 'decada', 'estado', 'nota', 'imdb', 'calidad', 'orden'],
@@ -988,17 +1029,6 @@ def generar(db_path: Path) -> str:
       facetas: ['tipo', 'genero', 'decada', 'imdb', 'calidad', 'orden'],
       ordenes: ['imdb_desc', 'titulo_asc', 'year_desc'], ordenDefecto: 'imdb_desc'
     }
-  };
-
-  /* Presets de los KPIs: se aplican sobre la seccion 'lista'.
-     Solo hay preset para los KPIs que equivalen a un conjunto de titulos.
-     'media' y 'exigencia' son promedios: su boton queda deshabilitado. */
-  const PRESET_KPI = {
-    total: { facetas: {} },
-    valoradas: { facetas: { estado: ['rated'] } },
-    pendientes: { facetas: { estado: ['watchlist'] } },
-    faltan: { facetas: { calidad: ['sin_sinopsis', 'sin_reparto', 'sin_poster'] } },
-    enriquecidos: { facetas: { calidad: ['completa'] } }
   };
 
   const pill = (v) => {
@@ -1055,6 +1085,11 @@ def generar(db_path: Path) -> str:
       { etiqueta: 'Título', clase: 't c-titulo', valor: tituloCelda },
       { etiqueta: 'Tipo', clase: 'c-txt', valor: (f) => f.tipo || '-' },
       { etiqueta: 'IMDb', clase: 'c-num', valor: (f) => (f.imdb == null ? '-' : texto(f.imdb)) }
+    ],
+    decadas: [
+      { etiqueta: 'Década', clase: 'c-titulo', valor: (f) => f.decada },
+      { etiqueta: 'Títulos', clase: 'c-num', valor: (f) => texto(f.titulos) },
+      { etiqueta: 'Media IMDb', clase: 'c-num', valor: (f) => f.media }
     ]
   };
   Object.keys(COLUMNAS).forEach((id) => { SECCIONES[id].columnas = COLUMNAS[id]; });
@@ -1258,8 +1293,63 @@ def generar(db_path: Path) -> str:
   function renderSeccion(id) {
     if (!SECCIONES[id]) return;
     if (id === 'posters') renderPosters(id);
+    else if (id === 'decadas') renderDecadas(id);
     else renderTabla(id);
     pintarChips(id);
+  }
+
+  /* "Notas por década" es un agregado: el filtro decide qué títulos
+     cuentan y la tabla agrupa los que quedan por década. */
+  function renderDecadas(id) {
+    const conf = SECCIONES[id];
+    const tabla = document.getElementById(conf.tabla);
+    if (!tabla) return;
+    const tbody = tabla.querySelector('tbody');
+    if (!tbody) return;
+    const grupos = new Map();
+    filasDe(id).forEach((f) => {
+      const d = decadaDe(f);
+      if (!d) return;
+      if (!grupos.has(d)) grupos.set(d, { decada: d, titulos: 0, suma: 0, conImdb: 0 });
+      const g = grupos.get(d);
+      g.titulos += 1;
+      if (f.imdb != null) { g.suma += f.imdb; g.conImdb += 1; }
+    });
+    let items = Array.from(grupos.values()).map((g) => ({
+      decada: g.decada + 's',
+      titulos: g.titulos,
+      media: g.conImdb ? (g.suma / g.conImdb).toFixed(2).replace(/[.]?0+$/, '') : '-'
+    }));
+    const est = estadoFiltros[id];
+    const orden = ORDENES[est.orden] || ORDENES[conf.ordenDefecto];
+    items.sort(orden.cmp);
+    const frag = document.createDocumentFragment();
+    if (!items.length) {
+      const tr = document.createElement('tr');
+      tr.className = 'vacio';
+      const td = document.createElement('td');
+      td.colSpan = conf.columnas.length;
+      td.className = 'empty';
+      td.textContent = 'Sin resultados con estos filtros.';
+      tr.appendChild(td);
+      frag.appendChild(tr);
+    } else {
+      items.forEach((it) => {
+        const tr = document.createElement('tr');
+        conf.columnas.forEach((col) => {
+          const td = document.createElement('td');
+          if (col.clase) td.className = col.clase;
+          td.dataset.label = col.etiqueta;
+          const v = col.valor(it);
+          if (v instanceof Node) td.appendChild(v);
+          else td.textContent = v;
+          tr.appendChild(td);
+        });
+        frag.appendChild(tr);
+      });
+    }
+    tbody.replaceChildren(frag);
+    if (paginadores[id]) paginadores[id].reiniciar();
   }
 
   function pintarChips(id) {
@@ -1414,24 +1504,14 @@ def generar(db_path: Path) -> str:
     if (abierto) cerrarPanelFiltro(abierto);
   }
 
-  function aplicarPresetKPI(clave) {
-    const preset = PRESET_KPI[clave];
-    if (!preset) return;
-    const est = estadoFiltros.lista;
-    est.facetas = JSON.parse(JSON.stringify(preset.facetas || {}));
-    est.q = '';
-    const q = document.getElementById('q');
-    if (q) q.value = '';
-    renderSeccion('lista');
-    guardarSesion();
+  /* Los KPI no filtran: solo llevan a la seccion que explica el numero. */
+  function navegarA(destino) {
+    if (!destino) return;
     const reduce = typeof window.matchMedia === 'function'
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const sec = document.getElementById('lista');
-    if (sec) {
-      sec.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-      const titulo = document.getElementById('titulo-lista');
-      if (titulo) titulo.focus();
-    }
+    destino.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    const titulo = destino.querySelector('h2');
+    if (titulo) titulo.focus();
   }
 
   function abrirPanelFiltro(id) {
@@ -1733,8 +1813,24 @@ def generar(db_path: Path) -> str:
   document.querySelectorAll('[data-filtro]').forEach((btn) => {
     btn.addEventListener('click', () => abrirPanelFiltro(btn.dataset.filtro));
   });
-  document.querySelectorAll('[data-kpi-filtro]').forEach((btn) => {
-    btn.addEventListener('click', () => aplicarPresetKPI(btn.dataset.kpiFiltro));
+  document.querySelectorAll('.motivo-mas').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const celda = btn.closest('.c-razon');
+      if (!celda) return;
+      const abierto = celda.classList.toggle('abierta');
+      btn.setAttribute('aria-expanded', String(abierto));
+      const extra = celda.querySelectorAll('.motivo-sec').length;
+      btn.textContent = abierto ? '−' : '+' + extra + ' más';
+    });
+  });
+  document.querySelectorAll('.kpi[href^="#"]').forEach((enlace) => {
+    enlace.addEventListener('click', (ev) => {
+      const destino = document.getElementById(enlace.getAttribute('href').slice(1));
+      if (!destino) return;
+      ev.preventDefault();
+      navegarA(destino);
+      history.replaceState(null, '', enlace.getAttribute('href'));
+    });
   });
   cargarSesion();
   if (qInput && estadoFiltros.lista.q) qInput.value = estadoFiltros.lista.q;
@@ -1774,7 +1870,7 @@ def generar(db_path: Path) -> str:
 {para_ti_html}
 {perfil_html}
 <section id="seccion-top" aria-labelledby="titulo-top">{top_head}
-<table class="paginada tabla-cards" id="tabla-top" data-seccion="top"><colgroup><col style="width:92px"><col><col style="width:150px"><col style="width:86px"></colgroup><thead><tr><th class="c-num">Tu nota</th><th class="c-titulo">Título</th><th class="c-txt">Tipo</th><th class="c-num">IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
+<table class="paginada tabla-cards tabla-centrada" id="tabla-top" data-seccion="top"><colgroup><col style="width:92px"><col><col style="width:150px"><col style="width:86px"></colgroup><thead><tr><th class="c-num">Tu nota</th><th class="c-titulo">Título</th><th class="c-txt">Tipo</th><th class="c-num">IMDb</th></tr></thead><tbody>{top_rows}</tbody></table></section>
 <div class="grid2">
 <section id="seccion-joyas" aria-labelledby="titulo-joyas">{joyas_head}
 <table class="paginada tabla-tarjeta" id="tabla-joyas" data-seccion="joyas"><thead><tr><th>Tú</th><th>Título</th><th>IMDb</th><th>Dif</th></tr></thead><tbody>{joya_rows}</tbody></table></section>

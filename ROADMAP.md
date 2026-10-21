@@ -19,6 +19,22 @@ Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
 - Los KPI ya no se cortan ("177/207") y las etiquetas quedan alineadas.
 - Verificado con capturas reales en Edge headless (CDP), escritorio y móvil.
 
+## Ajustes de interfaz (2026-10-21, sobre el rediseño)
+
+- Los **KPI ya no filtran**: son enlaces que llevan a la sección que explica el
+  número (Títulos → Lista completa, Valoradas → Tus favoritas, Tu nota media y
+  Exigencia → Mi perfil, En seguimiento → En seguimiento). Fuera el embudo, fuera
+  el motor de presets. Si "Mi perfil" no tiene nada que enseñar (catálogo
+  pequeño), esos KPI llevan a la lista en vez de a un ancla inexistente.
+- **"Para ti" con altura uniforme**: la celda del motivo reserva el alto del
+  motivo más largo, así que todas las filas miden lo mismo. Los motivos
+  secundarios se pliegan tras un botón "+N más" que los despliega en sitio.
+- **"Tus favoritas" con las cifras centradas**: en una tabla corta, una
+  columna estrecha alineada a la derecha parece perdida.
+- **"Notas por década" filtrable**: deja de ser una tabla estática y usa el
+  filtro estándar (tipo, década, tu nota y orden). El motor agrega en cliente
+  los títulos que pasan el filtro.
+
 ## Publicar sin perder nada (2026-10-21)
 
 - `scripts/publicar.py` sustituye al `generar_vista.py` + `git commit` a mano: copia la base, genera a un temporal, **compara con el snapshot publicado** y solo lo sustituye si no pierde títulos, valoradas, sinopsis, pósteres ni reparto. Si pierde algo, sale con código 3 sin tocar nada.
