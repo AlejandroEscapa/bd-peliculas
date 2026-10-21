@@ -51,6 +51,16 @@ class TestProveedores(unittest.TestCase):
             datos = prov.fetch("tt0000001")
         self.assertEqual(datos["sinopsis"]["text"], "English fallback")
 
+    def test_tmdb_busca_con_external_source_imdb_id(self):
+        """Sin external_source, /find/ responde 404 y no se encuentra nada."""
+        from src.proveedores.tmdb import ProveedorTMDB
+        prov = ProveedorTMDB(bearer="TEST")
+        find = {"movie_results": [], "tv_results": []}
+        with patch.object(ProveedorTMDB, "_get_json", return_value=find) as mock:
+            prov.fetch("tt0000001")
+        url = mock.call_args_list[0].args[0]
+        self.assertIn("external_source=imdb_id", url)
+
     def test_omdb_mapea_rating_sin_pisar_formato(self):
         from src.proveedores.omdb import ProveedorOMDB
         prov = ProveedorOMDB(api_key="TEST")

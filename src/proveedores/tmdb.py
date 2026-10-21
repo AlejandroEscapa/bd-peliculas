@@ -56,12 +56,18 @@ class ProveedorTMDB(ProveedorBase):
         with urllib.request.urlopen(req, timeout=self._timeout) as r:
             return json.load(r)
 
-    def _get(self, path: str, lang: str) -> dict:
-        url = f"{BASE}{path}?language={urllib.parse.quote(lang)}"
+    def _get(self, path: str, lang: str, params: dict | None = None) -> dict:
+        query = {"language": urllib.parse.quote(lang)}
+        for k, v in (params or {}).items():
+            query[k] = urllib.parse.quote(str(v))
+        url = f"{BASE}{path}?{'&'.join(f'{k}={v}' for k, v in query.items())}"
         return self._get_json(url)
 
     def fetch(self, tt: str) -> dict:
-        encontrado = self._get(f"/find/{tt}", LANG_ES)
+        # `external_source` es obligatorio: sin él, /find/ responde 404
+        # (status_code 34) y la película no se encuentra.
+        encontrado = self._get(f"/find/{tt}", LANG_ES,
+                               {"external_source": "imdb_id"})
         pelis = encontrado.get("movie_results") or []
         series = encontrado.get("tv_results") or []
         if pelis:
