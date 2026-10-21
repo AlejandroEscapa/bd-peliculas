@@ -136,6 +136,25 @@ class TestMotor(unittest.TestCase):
         self.assertNotIn("la", tokens)
         self.assertNotIn("el", tokens)
 
+    def test_tokens_quitan_pronombres_y_verbos_genericos_en_ingles(self):
+        """Los sinopsis vienen en inglés: sin esto, "his" empareja cualquier cosa."""
+        tokens = _tokens("His wife returns to the city with her friends and becomes a killer")
+        for ruido in ("his", "her", "with", "and", "becomes", "city", "wife", "friends"):
+            self.assertNotIn(ruido, tokens)
+        self.assertIn("killer", tokens)
+
+    def test_umbral_de_lift_descarta_diferencias_que_no_informan(self):
+        """Media diferencia no es una preferencia: no merece ser un motivo."""
+        from src.motor import UMBRAL_LIFT
+        self.assertGreaterEqual(UMBRAL_LIFT, 0.5)
+        motivos = []
+        for r in recomendar(self.conn):
+            motivos.extend(r["razones"])
+        # Drama tiene lift +0.25 en el fixture: por debajo del umbral.
+        self.assertFalse(any("género Drama" in m for m in motivos))
+        # Terror tiene lift +1.0: por encima, y sí aparece.
+        self.assertTrue(any("género Terror" in m for m in motivos))
+
     def test_indice_sinopsis_es_estable_entre_ejecuciones(self):
         v1, idf1 = indice_sinopsis(self.conn)
         v2, idf2 = indice_sinopsis(self.conn)

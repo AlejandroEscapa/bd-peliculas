@@ -54,8 +54,17 @@ PESOS = {
 # Un promedio de IMDb que te gana por 1 punto o más es aviso de decepción.
 UMBRAL_ANTIPROFIL = -1.0
 
-# Coseno mínimo para decir "se parece a", y al menos dos términos en común:
-# una palabra suelta en común ("esconde") no es un parecido, es coincidencia.
+# Tamaño de efecto mínimo para que una faceta cuente como preferencia.
+# Media punto en una escala de 1 a 10 es la diferencia entre "me gusta" y
+# "no me disgusta": no cambia lo que vas a ver, así que no merece ser un
+# motivo. Con 0.2 el panel repetía "el género Drama te sale alto: 7.8
+# frente a tu 7.5 global" en casi todas las filas, que no informa de nada.
+UMBRAL_LIFT = 0.5
+
+# Coseno mínimo para decir "se parece a", y al menos dos términos en común.
+# Los términos compartidos tienen que ser de contenido: la lista de stopwords
+# quita pronombres y verbos genéricos, que si no emparejaban cualquier cosa
+# ("his" era el término más "informativo" del catálogo entero).
 UMBRAL_SIMILITUD = 0.12
 MIN_TERMINOS_COMUNES = 2
 
@@ -82,13 +91,29 @@ PREPOSICION = {
 STOPWORDS = frozenset("""
 a al algo algun alguna alguno algunos ante antes aqui asi aun aunque bajo bien cada
 como con contra cual cuando de del desde donde dos el ella ellas ellos en entre era
-eres es esa esas ese eso esos esta estan estas este esto estos fue fueron ha habia
+eres es esa esas ese eso estos esta estan estas este esto estos fue fueron ha habia
 han hasta hay la las le les lo los mas me mi mis mucho muchos muy nada ni no nos
 nuestra nuestro o os otra otro para pero poco por porque que quien se sea segun ser
 si sin sobre solo son su sus tambien tan tanto te tiene tienen todo todos tu tus
 un una uno unos y ya yo
 the a an and are as at be but by for from has have he in is it its of on or that the
 this to was were will with
+his her hers their theirs they them this that these those there here who whom whose
+which what when where why how while into onto upon with without within across through
+during before after above below under over again further once all any both each few
+more most other another some such only own same so than then too very just now one
+two three four five many much shall can could would should may might must will do
+does did done have has had having been being get gets got make makes made take takes
+taken come comes came go goes went see sees saw know knows knew think thinks thought
+say says said want wants look looks find finds tell tells ask asks work works use
+uses used feel feels give gives gave become becomes lives live explores explore
+tracks track down out up off near far first last next previous new old young
+man woman boy girl people person family friend home house city street road car
+money war hero villain father mother son daughter brother sister husband wife boss
+enemy partner team group member leader king queen battle army peace love life death
+men women boys girls children families friends homes houses cities streets cars teams
+groups members leaders enemies partners bosses fathers mothers sons daughters
+brothers sisters husbands wives wars heroes villains kings queens armies
 """.split())
 
 _RE_TOKEN = re.compile(r"[a-z0-9]+")
@@ -348,7 +373,7 @@ def recomendar(
                 etiqueta = ETIQUETAS.get(faceta, faceta)
                 articulo = ARTICULO.get(faceta, "el")
                 lift = dato["lift"]
-                if abs(lift) >= 0.2:
+                if abs(lift) >= UMBRAL_LIFT:
                     if lift > 0:
                         texto = (f"{articulo.capitalize()} {etiqueta} {valor} te sale alto: "
                                  f"{dato['media']:.1f} frente a tu {global_media:.1f} global")
