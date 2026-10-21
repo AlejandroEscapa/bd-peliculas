@@ -1,9 +1,17 @@
 # Roadmap — Catálogo personal (db-peliculas)
 
-Estado a 2026-10-20 (tras lote 137, fallos 0): 207 títulos, 1032 huecos. Sinopsis 157/207, pósters 156, cast 470 filas. Restan ~50 sin resolver por TMDB-find + fase 2 (fecha ES, dinero, serie_info).
-Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, ficha overlay con sinopsis al final, strip de pósters, motor de filtros por sección (facetas + orden) y paginación reactiva, Joyas/Decepciones + Géneros/Directores/Actores, KPIs extra (Exigencia y Enriquecidos X/207), Notas por década y "Para ti" (pendientes ordenados por encaje, con su porqué).
+Estado a 2026-10-21 (publicado desde la base real): 207 títulos, 148 valoradas, 0 títulos sin enriquecer (207/207), 45 colecciones de TMDB (11 sagas con más de una parte en tu catálogo), 54 relaciones de saga. Suite 122/122 OK.
+Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, ficha overlay con sinopsis al final, strip de pósters, motor de filtros por sección (facetas + orden) y paginación reactiva, Joyas/Decepciones + Géneros/Directores/Actores, KPIs extra (Exigencia y Enriquecidos X/207), Notas por década y "Para ti" (pendientes ordenados por encaje, con su porqué) y el bloque "Colección" en la ficha.
 Tuberías conectadas (2026-10-20): colecciones de TMDB (`belongs_to_collection`, 0 peticiones extra) en `title_collections`, con relaciones saga derivadas en `title_relations`; `schema_version` ya se registra al aplicar el esquema. La ficha muestra el bloque "Colección" con las partes de tu catálogo, por año y con tu nota.
-Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
+Watcher `scripts/auto_vista.py` verificado. Suite 122/122 OK.
+
+## Trampa de TMDB (2026-10-21)
+
+`GET /find/{imdb_id}` **exige `external_source=imdb_id`**: sin ese parámetro
+responde 404 (`status_code` 34) y el scraper se queda solo con OMDb, que no
+trae `belongs_to_collection` (el hueco `coleccion` no se cierra nunca) ni
+frescura el resto de campos de TMDB. Fix en `src/proveedores/tmdb.py`
+(`_get` acepta parámetros extra) con test de regresión.
 
 ## Rediseño de la interfaz (2026-10-21)
 
@@ -45,7 +53,7 @@ Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
 - `scripts/semilla.py` construye `data/semilla.db` a partir del snapshot publicado: los mismos 207 títulos con **notas sintéticas** (deterministas, correlacionadas con el IMDb y con una preferencia por géneros) y las **sagas reales** detectadas por título. Sirve para iterar la interfaz sin la base real ni red, y para la demo pública en `/demo`.
 - `preview/semilla.html` es el artefacto de esa demo; se regenera con `python scripts/semilla.py && python scripts/generar_vista.py --db data/semilla.db --salida preview/semilla.html`.
 
-## PENDIENTES AL LLEGAR A CASA (2026-10-20)
+## PENDIENTES AL LLEGAR A CASA (2026-10-20) — HECHOS (2026-10-21)
 
 > **Handoff completo** (guion, verificaciones, mapa del código, decisiones
 > tomadas y trampas conocidas): [`docs/superpowers/plans/2026-10-20-handoff.md`](docs/superpowers/plans/2026-10-20-handoff.md).
@@ -54,28 +62,33 @@ Watcher `scripts/auto_vista.py` verificado. Suite 94/94 OK.
 > [`docs/superpowers/plans/2026-10-21-handoff-casa.md`](docs/superpowers/plans/2026-10-21-handoff-casa.md).
 
 > **Todo está commiteado y pusheado** (`main` = `origin/main`), suite
-> 121/121 en verde, y **la vista ya está publicada**: `preview/dashboard.html`
-> lleva el rediseño, el motor depurado y los KPI navegables.
+> 122/122 en verde, y **la vista está publicada desde la base real**:
+> `preview/dashboard.html` lleva el rediseño, el motor depurado, los KPI
+> navegables y **las sagas**.
 >
-> **Pendiente de usar tu base real.** El snapshot publicado se regeneró desde
-> una reconstrucción fiel del `catalogo-data` anterior (la base no existe fuera
-> de tu máquina). La equivalencia está comprobada: mismos 207 tt, mismas
-> notas, mismos géneros y directores; las tablas de actores, directores, tus
-> favoritas, joyas, decepciones, lista y seguimiento salen idénticas fila a
-> fila; y el guard de `publicar.py` lo da por bueno (207 títulos, 148
-> valoradas, 177 con sinopsis/póster/reparto, 141 directores y 427 actores
-> distintos, antes y después).
+> **Estado (2026-10-21):** ejecutados los 3 pasos del prompt de handoff sobre
+> la base real (`data/catalogo.db`, 207 títulos / 148 valoradas).
 >
-> Lo único que le falta al panel publicado son **las sagas**: `title_collections`
-> está vacía porque el scraper no se ha ejecutado desde que existe el hueco
-> `coleccion`. Se arregla en tu máquina (punto 1). Handoff completo:
-> `docs/superpowers/plans/2026-10-20-handoff.md`.
+> - **Bloqueo encontrado y arreglado**: TMDB ya no responde `/find/{tt}` sin
+>   `external_source=imdb_id` (404, `status_code` 34), así que el scraper
+>   caía a OMDb y el hueco `coleccion` no se cerraba nunca. Fix en
+>   `src/proveedores/tmdb.py` (commit `add9574`) + test de regresión.
+> - Scraper: 207/207 títulos, 0 fallos, `coleccion` rellenada en los 207
+>   (45 colecciones, 11 con más de una parte en tu catálogo).
+> - `derivar_relaciones.py`: 45 colecciones, 54 relaciones nuevas (37
+>   `universe`, 17 `sequel`).
+> - `publicar.py --dry-run` → sin pérdidas; `--push` → commit `f35f727`,
+>   CI en verde, Vercel redesplegó.
+> - El guard, métrica a métrica: títulos 207 → 207, valoradas 148 → 148,
+>   con sinopsis 177 → 207, con póster 177 → 207, con reparto 177 → 207,
+>   con géneros 207 → 207, directores 141 → 144, actores 427 → 609,
+>   recomendaciones 35 → 35.
 
-### 1. Regenerar desde tu base real (~25 min)
+### 1. Regenerar desde tu base real (~25 min) — HECHO
 
 Ya está publicado; esto lo deja **definitivo** (y de paso añade las sagas).
 
-- [ ] **Rellenar el hueco `coleccion`** — el scraper lee
+- [x] **Rellenar el hueco `coleccion`** — el scraper lee
       `belongs_to_collection` de la respuesta de detalle que TMDB ya te
       pedía, así que **no gastas peticiones extra**. Ojo: el scraper ahora
       aplica el esquema vigente, tu base gana la tabla `title_collections`
@@ -83,39 +96,34 @@ Ya está publicado; esto lo deja **definitivo** (y de paso añade las sagas).
       ```bat
       python scripts/scrapear_peliculas.py --proveedor src.proveedores.combinado:ProveedorCombinado --limite 207 --delay 1.5
       ```
-      Verificar: el hueco `coleccion` desaparece de `listar_huecos()`.
-- [ ] **Derivar las sagas** (idempotente, se puede repetir sin miedo):
+      Verificado: `listar_huecos()` ya no devuelve ningún hueco `coleccion`.
+- [x] **Derivar las sagas** (idempotente, se puede repetir sin miedo):
       ```bat
       python scripts/derivar_relaciones.py
       ```
-      Verificar: imprime "N colecciones, M relaciones nuevas". Si `M = 0`, tus
-      títulos no comparten saga (normal si tienes pocas de una misma
-      colección): no es un error.
-- [ ] **Regenerar el snapshot** (esto es lo que faltaba para que se vieran
-      los KPIs nuevos y la sección por década):
+      Verificado: "45 colecciones, 54 relaciones nuevas".
+- [x] **Regenerar el snapshot** (esto es lo que faltaba para que se vieran
+      los KPIs nuevos y la sección por década). Ojo: **no** se hace a mano;
+      lo hace `publicar.py`, que compara antes de sustituir.
       ```bat
-      python scripts/generar_vista.py
+      python scripts/publicar.py --dry-run
       ```
-      Verificar: `preview/dashboard.html` pesa más que antes y la ficha de un
-      título con saga muestra el bloque "Colección".
-- [ ] **Publicar el snapshot** (el código ya está subido; esto es lo único
+- [x] **Publicar el snapshot** (el código ya está subido; esto es lo único
       que queda por ver):
       ```bat
-      git add preview/dashboard.html
-      git commit -m "chore: regenera el snapshot del panel"
-      git push origin main
+      python scripts/publicar.py --push
       ```
       El push dispara el CI de GitHub Actions y Vercel redespliega.
 
-### 2. Comprobar en el navegador (~10 min)
+### 2. Comprobar en el navegador (~10 min) — HECHO
 
-- [ ] Los **7 KPIs** (salen "Exigencia" y "Enriquecidos", que no estaban en el
+- [x] Los **7 KPIs** (salen "Exigencia" y "Enriquecidos", que no estaban en el
       snapshot publicado) y la sección **"Notas por década"**.
-- [ ] Los botones de los KPIs: **antes estaban muertos** (la rama los dejó sin
+- [x] Los botones de los KPIs: **antes estaban muertos** (la rama los dejó sin
       wiring). Ahora "Valoradas" y "Sin enriquecer" aplican un preset sobre
       Lista completa. "Tu nota media" y "Exigencia" salen **deshabilitados**:
       son promedios, no conjuntos de títulos.
-- [ ] La **ficha** con el bloque "Colección": partes de tu saga por año, con tu
+- [x] La **ficha** con el bloque "Colección": partes de tu saga por año, con tu
       nota, y el clic en una parte abre su ficha.
 - [ ] En móvil: responsive, sinopsis plegada con "Leer más".
 
