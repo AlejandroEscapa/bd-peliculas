@@ -1,5 +1,8 @@
 # Roadmap — Catálogo personal (db-peliculas)
 
+> Orden de ataque con los planes pendientes (2026-10-23):
+> [`docs/2026-10-23-reporte-pendientes.md`](docs/2026-10-23-reporte-pendientes.md).
+
 Estado a 2026-10-22 (publicado desde la base real): 208 títulos, 149 valoradas, 0 títulos sin enriquecer (208/208), 45 colecciones de TMDB (11 sagas con más de una parte en tu catálogo), 54 relaciones de saga. Suite 140/140 OK.
 Panel en `preview/dashboard.html`: responsive mobile-first, buscador global, ficha overlay con sinopsis al final y la Colección debajo a todo el ancho, strip de pósters, motor de filtros por sección (facetas + orden) y paginación reactiva, Joyas/Decepciones + Géneros/Directores/Actores, KPIs extra (Exigencia y Enriquecidos X/208), Notas por década y "Para ti" (pendientes ordenados por encaje, con su porqué y las filas a la misma altura). **Todas las secciones se pliegan** (menos el strip de pósters; "Para ti" abre) y el panel **se sirve con un zoom del 110%**. Todo centrado menos títulos, "por qué" y géneros.
 Tuberías conectadas (2026-10-20): colecciones de TMDB (`belongs_to_collection`, 0 peticiones extra) en `title_collections`, con relaciones saga derivadas en `title_relations`; `schema_version` ya se registra al aplicar el esquema. La ficha muestra el bloque "Colección" con las partes de tu catálogo, por año y con tu nota.
@@ -207,8 +210,10 @@ implementa la aceptada):
       productor, compositor) **ya está descargado**, solo es mostrarlo. Los
       datos de ejemplo: Nolan/Jonathan Nolan 9.0 de media, Villeneuve 9.5,
       Tolkien 8.67, Rowling 6.86.
-- [ ] "Mi perfil" — lift por género/director/actor (tu media en la faceta
-      menos tu media global). Es la pieza que hace explicable el motor.
+- [x] "Mi perfil" — lift por género/director/actor (tu media en la faceta
+      menos tu media global). **Hecho y publicado** (2026-10-22): la sección
+      existe en el panel, con sus tests en `tests/test_motor.py`; solo queda,
+      si se quiere, afinarla con lift reales.
 - [ ] "Qué ver hoy" — ruleta determinista por día sobre los pendientes.
 - [ ] Bloque "Colección" **completo**: las partes que no tienes (1 petición
       por colección, y las colecciones son pocas).
@@ -319,7 +324,7 @@ para el spike y la beta.
 - [x] Lote completo 137 ejecutado por el usuario con `fallos: 0` (1633 → 1032 huecos). Quedan ~50 títulos que TMDB-find no resolvió: reintentar tras fase 2 o con OMDb-solo.
 - [x] Mezcla de la rama `feat/responsive-filtros` (responsive, ficha overlay con sinopsis, motor de filtros por sección) y del WIP local (KPIs Exigencia/Enriquecidos, Notas por década, botones de KPI con preset).
 - [x] Presets de KPI operativos (la rama los dejó muertos: abrían un panel `kpi-*` que no existe en `SECCIONES`).
-- [ ] Regenerar: `python scripts/auto_vista.py --una-vez` (o dejar el watcher abierto). **Requiere tu base**: la copia sin `data/catalogo.db` no puede. Ver "PENDIENTES AL LLEGAR A CASA".
+- [x] Regenerar ~~`python scripts/auto_vista.py --una-vez`~~ — **obsoleto**: el snapshot ya se regenera y publica con `scripts/publicar.py` (commits `d172684` y `be7593d`), que además guarda contra pérdidas.
 
 ## Fase 2 TMDB (diseño aprobado, sin empezar)
 
@@ -347,7 +352,7 @@ Descartadas por ahora, a debat si las quieres:
 ## Despliegue web
 
 - Estado: desplegado en Vercel y GitHub (`https://github.com/AlejandroEscapa/bd-peliculas`).
-- **Ojo: el código está publicado, el HTML todavía no.** `preview/dashboard.html` sigue siendo el de la rama (5 KPIs, sin "Notas por década", sin bloque "Colección", sin "Para ti" y con los botones de KPI muertos), porque regenerarlo necesita tu base. Se pone al día con el punto 1 de "PENDIENTES AL LLEGAR A CASA".
+- **Código y HTML publicados** (2026-10-21/22): `preview/dashboard.html` sale de la base real y lleva los 7 KPIs, "Notas por década", el bloque "Colección", "Para ti" y los botones de KPI operativos.
 - `vercel.json` reescribe `/` → `/preview/dashboard.html`.
 - `preview/dashboard.html` no tiene dependencias; se sirve como estático (Vercel) o en local.
 - Opción B (gestionado Cloudflare): herramientas `sites_*` disponibles si quieres preview/producción con D1/R2 y auth; este proyecto hoy es SQLite local + HTML estático, así que habría que adaptarlo antes.

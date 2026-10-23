@@ -1,5 +1,11 @@
 # Panel responsive, ficha con sinopsis y filtros por sección — Plan de implementación
 
+> **Estado (2026-10-23): EJECUTADO.** Todo lo de este plan está implementado,
+> commiteado y publicado (responsive mobile-first, ficha overlay con sinopsis
+> al final, motor de filtros por sección con facetas y paginación reactiva,
+> presets de KPI). Los checkboxes no se tacharon en su día; queda como
+> registro histórico.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Convertir el panel en una interfaz mobile-first, mover la sinopsis al final de la ficha a todo el ancho y añadir filtros por sección y KPI que recalculen el catálogo en cliente.

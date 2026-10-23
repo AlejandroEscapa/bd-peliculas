@@ -1,5 +1,10 @@
 # Portfolio-ready MVP polish — bd-peliculas
 
+> **Estado (2026-10-23): EJECUTADO.** Todo lo de este plan está implementado,
+> commiteado y en verde (CI en GitHub Actions, strip de pósters, buscador
+> global accesible, ficha con sinopsis, despliegue en Vercel). Los checkboxes
+> no se tacharon en su día; queda como registro histórico.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Convertir el catálogo local en un proyecto que se sostenga solo en GitHub y en el portfolio: CI que lo demuestre, un panel que enseñe el enriquecido y una ficha accesible, sin romper el contrato 15 + 15 ni añadir dependencias.
